@@ -7,7 +7,7 @@ Email: dannbohn@gmail.com
 Clone a VM from template example
 """
 from pyVmomi import vim
-from pyVim.connect import SmartConnect, Disconnect
+from pyVim.connect import SmartConnect, Disconnect, SmartConnectNoSSL
 import atexit
 import argparse
 import getpass
@@ -140,7 +140,6 @@ def get_obj(content, vimtype, name):
         else:
             obj = c
             break
-
     return obj
 
 
@@ -196,7 +195,7 @@ def main():
     args = get_args()
 
     # connect this thing
-    si = SmartConnect(
+    si = SmartConnectNoSSL(
         host=args.host,
         user=args.user,
         pwd=args.password,

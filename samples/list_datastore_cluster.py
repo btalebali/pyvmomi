@@ -51,7 +51,7 @@ def main():
     args = get_args()
 
     try:
-        service_instance = connect.SmartConnect(host=args.host,
+        service_instance = connect.SmartConnectNoSSL(host=args.host,
                                                 user=args.user,
                                                 pwd=args.password,
                                                 port=int(args.port))
@@ -76,6 +76,7 @@ def main():
                 print "Datastores: "
                 for datastore in datastores:
                     print datastore.name
+
 
     except vmodl.MethodFault as error:
         print "Caught vmodl fault : " + error.msg

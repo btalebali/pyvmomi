@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+
+
+
+from samples.vsclient.vsclient import *
+
+host= "172.17.117.104"
+user= "administrateur"
+pwd="Pr0l0gue2014"
+port=443
+
+######################################################
+######### Unit tests #################################
+#################################### #################
+
+
+#vDCs = list_vDC(host,user,pwd,port)
+#print vDCs
+
+
+#vDCmor="datacenter-527"
+#clusters = list_Clusters_in_vDC(host,user,pwd,port, vDCmor)
+#print clusters
+
+
+
+clustermor="domain-c532"
+ressourcepools = list_RessourcesPool_and_VM_in_cluster(host,user,pwd,port, clustermor)
+print ressourcepools
