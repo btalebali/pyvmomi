@@ -31,7 +31,7 @@ port=443
 
 
 # clustermor="domain-c532"
-# ressourcepools = list_RessourcesPool_and_VM_in_cluster(host,user,pwd,port, clustermor)
+# ressourcepools = list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, clustermor)
 # print ressourcepools
 
 
@@ -52,6 +52,9 @@ port=443
 
 
 
-datastoreclustermor="group-p5809"
-datastores = list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermor)
-print datastores
+# datastoreclustermor="group-p5809"
+# datastores = list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermor)
+# print datastores
+
+
+
