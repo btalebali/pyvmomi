@@ -51,10 +51,12 @@ port=443
 # print datastorecluster
 
 
-
+#
 # datastoreclustermor="group-p5809"
 # datastores = list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermor)
 # print datastores
 
 
-
+datastore_mor = "datastore-2925"#"datastore-543"
+datastore_infos = get_datastore_infos(host, user, pwd, port, datastore_mor)
+print datastore_infos

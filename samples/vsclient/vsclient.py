@@ -145,14 +145,22 @@ def list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, cluster_mor, rp
         }
 
         for rp_resource_pool in rp.resourcePool:
-            data["resources_pools"].append(list_RessourcesPool_and_VM_in_cluster2(host, user, pwd, port, cluster_mor, rp_resource_pool))
+            data["resources_pools"].append(list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, cluster_mor, rp_resource_pool))
 
         return json.dumps(data, sort_keys=True) if init else data
     except vmodl.MethodFault as e:
         result = "Caught vmodl fault : {}".format(e.msg)
         return result
 
-
+def get_VMS(vms):
+    VMS = []
+    for vm in vms:
+        vmdict = {}
+        vmdict["id"] = str(vm._moId)
+        vmdict["name"] = str(vm.name)
+        vmdict["status"] = str(vm.summary.runtime.powerState)
+        VMS.append(vmdict)
+    return VMS
 
 
 
@@ -251,4 +259,41 @@ def list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermo
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+
+def get_datastore_infos(host, user, pwd, port, datastore_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param datastore_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.Datastore], True)
+        result={}
+        for obj in object_view.view:
+            if obj._moId == datastore_mor:
+                result["name"]=obj.name
+                result["moId"] = str(obj._moId)
+                result["overallStatus"] = str(obj.overallStatus)
+                result["capacity"]=str(obj.summary.capacity)
+                result["freeSpace"] = str(obj.summary.freeSpace)
+                result["type"] = obj.summary.type
+                result["vms"]=get_VMS(obj.vm)
+        object_view.Destroy()
+        return result
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
 
