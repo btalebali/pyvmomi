@@ -14,8 +14,8 @@ port=443
 ######### Unit tests #################################
 #################################### #################
 
-server_infos = get_vcenterserver_infos(host,user,pwd,port)
-print server_infos
+# server_infos = get_vcenterserver_infos(host,user,pwd,port)
+# print server_infos
 
 #vDCs = list_vDC(host,user,pwd,port)
 #print vDCs
@@ -30,5 +30,12 @@ print server_infos
 # clustermor="domain-c532"
 # ressourcepools = list_RessourcesPool_and_VM_in_cluster(host,user,pwd,port, clustermor)
 # print ressourcepools
+
+
+
+
+clustermor="domain-c532"
+hosts = list_hosts_in_cluster(host, user, pwd, port, clustermor)
+print hosts
 
 

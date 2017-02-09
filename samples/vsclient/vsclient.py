@@ -19,7 +19,6 @@ def get_vcenterserver_infos(host,user,pwd,port):
     :param port:
     :return:
     """
-
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.verify_mode = ssl.CERT_NONE
@@ -48,8 +47,6 @@ def get_vcenterserver_infos(host,user,pwd,port):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
-
-
 
 
 
@@ -219,14 +216,14 @@ def list_hosts_in_cluster(host, user, pwd, port, Clustermor):
             return result
         atexit.register(connect.Disconnect, service_instance)
         content = service_instance.RetrieveContent()
-        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.Datacenter], True)
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.ClusterComputeResource], True)
         result={}
         for obj in object_view.view:
-            if obj._moId==vDCmor:
-                #print obj
-                clusters = obj.hostFolder.childEntity
-                for obj in clusters:
-                    result[obj.name] = obj._moId
+            if obj._moId==Clustermor:
+#                print obj
+                hosts = obj.host
+                for host in hosts:
+                    result[host.name]=host._moId
         object_view.Destroy()
         return result
     except vmodl.MethodFault as e:
