@@ -14,17 +14,21 @@ port=443
 ######### Unit tests #################################
 #################################### #################
 
+server_infos = get_vcenterserver_infos(host,user,pwd,port)
+print server_infos
 
 #vDCs = list_vDC(host,user,pwd,port)
 #print vDCs
 
 
-#vDCmor="datacenter-527"
-#clusters = list_Clusters_in_vDC(host,user,pwd,port, vDCmor)
-#print clusters
+# vDCmor="datacenter-527"
+# clusters = list_Clusters_in_vDC(host,user,pwd,port, vDCmor)
+# print clusters
 
 
 
-clustermor="domain-c532"
-ressourcepools = list_RessourcesPool_and_VM_in_cluster(host,user,pwd,port, clustermor)
-print ressourcepools
+# clustermor="domain-c532"
+# ressourcepools = list_RessourcesPool_and_VM_in_cluster(host,user,pwd,port, clustermor)
+# print ressourcepools
+
+
