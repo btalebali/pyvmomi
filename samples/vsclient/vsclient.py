@@ -192,7 +192,45 @@ def get_rpdicts(rp):
 
 
 
+def list_RessourcesPool_and_VM_in_cluster2(host, user, pwd, port, cluster_mor, rp = None):
+    try:
+        init = (rp is None)
 
+        if init:
+            # recuperation racine (todo get cluster by id directement)
+
+            context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            context.verify_mode = ssl.CERT_NONE
+            service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+            if not service_instance:
+                result = "Could not connect to the specified host using specified username and password"
+                return result
+            atexit.register(connect.Disconnect, service_instance)
+            content = service_instance.RetrieveContent()
+            object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.ClusterComputeResource], True)
+
+            clusters = object_view.view
+            object_view.Destroy()
+            # todo gerer le fait de ne pas trouver le cluster
+            for c in clusters:
+                if c._moId == cluster_mor:
+                    rp = c.resourcePool
+                    break
+
+        data = {
+            "id": str(rp._moId),
+            "name": str(rp.name),
+            "resources_pools": [],
+            "vms": get_VMS(rp.vm)
+        }
+
+        for rp_resource_pool in rp.resourcePool:
+            data["resources_pools"].append(list_RessourcesPool_and_VM_in_cluster2(host, user, pwd, port, cluster_mor, rp_resource_pool))
+
+        return json.dumps(data, sort_keys=True) if init else data
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
 
 
 
