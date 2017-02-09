@@ -46,7 +46,12 @@ port=443
 
 ###### DATASTORE
 
-vDCmor="datacenter-527"
-datastorecluster = list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor)
-print datastorecluster
+# vDCmor="datacenter-527"
+# datastorecluster = list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor)
+# print datastorecluster
 
+
+
+datastoreclustermor="group-p5809"
+datastores = list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermor)
+print datastores
