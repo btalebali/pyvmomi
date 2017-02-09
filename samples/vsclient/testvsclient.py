@@ -14,6 +14,9 @@ port=443
 ######### Unit tests #################################
 #################################### #################
 
+
+##### COMPUTE
+
 # server_infos = get_vcenterserver_infos(host,user,pwd,port)
 # print server_infos
 
@@ -34,8 +37,16 @@ port=443
 
 
 
-clustermor="domain-c532"
-hosts = list_hosts_in_cluster(host, user, pwd, port, clustermor)
-print hosts
+# clustermor="domain-c532"
+# hosts = list_hosts_in_cluster(host, user, pwd, port, clustermor)
+# print hosts
 
+
+
+
+###### DATASTORE
+
+vDCmor="datacenter-527"
+datastorecluster = list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor)
+print datastorecluster
 
