@@ -447,3 +447,107 @@ def get_vm_GuestNicInfos_infos(vm):
             dev["dnsConfig"] = dnsConfig
         devices.append(dev)
     return devices
+
+
+
+
+
+
+
+
+def list_standard_vswitch_in_vDC(host, user, pwd, port, vDCmor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.Network], True)
+        result={}
+        for obj in object_view.view:
+            if obj.parent.parent._moId == vDCmor and obj._wsdlName=='Network' :
+                result[obj.name] = obj._moId
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+def list_distributed_vswitch_in_vDC(host, user, pwd, port, vDCmor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VmwareDistributedVirtualSwitch], True)
+        result=[]
+        for obj in object_view.view:
+            if obj.parent.parent._moId == vDCmor:
+                dvs={}
+                dvs["name"]=obj.name
+                dvs["uuid"] =obj.uuid
+                dvs["moId"] = obj._moId
+                result.append(dvs)
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def list_distributed_virtual_portgroups_in_vDC(host, user, pwd, port, dVSmor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param dVSmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.DistributedVirtualPortgroup], True)
+        result=[]
+        for obj in object_view.view:
+            if obj.config.distributedVirtualSwitch._moId==dVSmor:
+                dpg={}
+                dpg["name"]=obj.name
+                dpg["moId"] = obj._moId
+                result.append(dpg)
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result

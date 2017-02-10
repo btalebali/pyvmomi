@@ -81,3 +81,22 @@ port=443
 # virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
 # virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, virtualmachine_mor)
 # print virtualmachine_infos
+
+
+######## NETWORK
+
+# vDCmor="datacenter-527"
+# standard_switchs = list_standard_vswitch_in_vDC(host, user, pwd, port, vDCmor)
+# print standard_switchs
+#{"VM Network": "network-540", "none": "network-2939"}
+
+
+# vDCmor="datacenter-527"
+# distributed_switchs = list_distributed_vswitch_in_vDC(host, user, pwd, port, vDCmor)
+# print distributed_switchs
+
+
+
+# dVSmor="dvs-3083"
+# distributed_virtual_portgroups = list_distributed_virtual_portgroups_in_vDC(host, user, pwd, port, dVSmor)
+# print distributed_virtual_portgroups
