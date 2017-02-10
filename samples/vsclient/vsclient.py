@@ -191,7 +191,7 @@ def list_hosts_in_cluster(host, user, pwd, port, Clustermor):
                 for host in hosts:
                     result[host.name]=host._moId
         object_view.Destroy()
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
@@ -223,7 +223,7 @@ def list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor):
             if obj.parent.parent._moId == vDCmor:
                 result[obj.name] = obj._moId
         object_view.Destroy()
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
@@ -255,7 +255,7 @@ def list_datastore_in_datastorecluster(host, user, pwd, port, datastoreclustermo
                 for datastore in datastores:
                     result[datastore.name] = datastore._moId
         object_view.Destroy()
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
@@ -290,10 +290,156 @@ def get_datastore_infos(host, user, pwd, port, datastore_mor):
                 result["type"] = obj.summary.type
                 result["vms"]=get_VMS(obj.vm)
         object_view.Destroy()
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
 
 
 
+def get_resourcepool_infos(host, user, pwd, port, resourcepool_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param resourcepool_mor:
+    :return:
+    """
+
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.ResourcePool], True)
+        result={}
+        for obj in object_view.view:
+            if obj._moId == resourcepool_mor:
+                result["name"]=obj.name
+                result["moId"] = str(obj._moId)
+                result["overallStatus"] = str(obj.overallStatus)
+                cpu = {
+                    "overallCpuUsage": int(obj.summary.quickStats.overallCpuUsage),
+                    "overallCpuDemand": int(obj.summary.quickStats.overallCpuDemand),
+                    "maxUsage": int(obj.summary.runtime.cpu.maxUsage)
+                }
+                ram = {
+                    "hostMemoryUsage": int(obj.summary.quickStats.hostMemoryUsage),
+                    "consumedOverheadMemory": int(obj.summary.quickStats.consumedOverheadMemory),
+                    "maxUsage": sum_memory_vms(obj.vm)
+                }
+                result["cpu"] = cpu
+                result["ram"] = ram
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def sum_memory_vms(vms):
+    if len(vms) == 0:
+        return None
+    else:
+        result=0
+        for vm in vms:
+            result+= int(vm.config.hardware.memoryMB)
+        return result
+
+
+
+
+def get_virtualmachine_infos(host, user, pwd, port, virtualmachine_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param virtualmachine_mor:
+    :return:
+    """
+
+
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result={}
+        for vm in object_view.view:
+            if vm._moId == virtualmachine_mor:
+                tools = {
+                    "toolsVersion": vm.config.tools.toolsVersion,
+                    "toolsStatus": str(vm.summary.guest.toolsStatus),
+                    "toolsRunningStatus": str(vm.summary.guest.toolsRunningStatus)
+                }
+                result["name"]=vm.name
+                result["moId"] = str(vm._moId)
+                result["powerState"]=str(vm.runtime.powerState)
+                result["resourcePool"]=vm.resourcePool._moId
+                result["annotation"]=(vm.summary.config.annotation)
+                result["memorySizeMB"]=vm.summary.config.memorySizeMB
+                result["numCPU"] = int(vm.config.hardware.numCPU)
+                result["numCoresPerSocket"]=int(vm.config.hardware.numCoresPerSocket)
+                result["vmPathName"]=vm.summary.config.vmPathName
+                result["VirtualDisks"]= get_vm_virtualDisk_infos(vm)
+                result["VirtualNetworkAdapter"] = get_vm_VirtualNetworkAdapter_infos(vm)
+                result["GuestNicInfos"] = get_vm_GuestNicInfos_infos(vm)
+                result["hostName"]=vm.summary.guest.hostName
+                result["ipAddress"]=vm.summary.guest.ipAddress
+                result["tools"] = tools
+
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def get_vm_virtualDisk_infos(vm):
+    devices=[]
+    for device in vm.config.hardware.device:
+        if device._wsdlName == "VirtualDisk" :
+            dev={}
+            dev["capacityInKB"] = device.capacityInKB
+            dev["label"] = device.deviceInfo.label
+            devices.append(dev)
+    return devices
+
+def get_vm_VirtualNetworkAdapter_infos(vm):
+    adaptaters = []
+    for device in vm.config.hardware.device:
+        if device._wsdlName in ["VirtualE1000", "VirtualE1000e", "VirtualPCNet32", "VirtualVmxnet", "VirtualNmxnet2", "VirtualVmxnet3"]:
+            adap = {}
+            adap["DeviceType"] = device._wsdlName
+            adap["macAddress"] = device.macAddress
+            adap["label"] = device.deviceInfo.label
+            adaptaters.append(adap)
+    return adaptaters
+
+def get_vm_GuestNicInfos_infos(vm):
+    devices=[]
+    for guestnicinfos in vm.guest.net:
+        dev={}
+        dev["Network"]=guestnicinfos.network
+        dev["ipAddress"]=guestnicinfos.ipAddress
+        dev["macAddress"]=guestnicinfos.macAddress
+        dev["connected"] =guestnicinfos.connected
+        # TODO  if guestnicinfos.dnsConfig incluse a NetDnsConfigInfos
+
+        dev["dnsConfig"] =
+
+        print dev["dnsConfig"]
+
+        devices.append(dev)
+    return devices
