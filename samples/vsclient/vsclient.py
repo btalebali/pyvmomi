@@ -435,7 +435,6 @@ def get_vm_GuestNicInfos_infos(vm):
         dev["ipAddress"]=guestnicinfos.ipAddress
         dev["macAddress"]=guestnicinfos.macAddress
         dev["connected"] =guestnicinfos.connected
-        # TODO  if guestnicinfos.dnsConfig incluse a NetDnsConfigInfos
         dev["dnsConfig"]=None
         aux = guestnicinfos.dnsConfig
         if aux:
@@ -551,3 +550,72 @@ def list_distributed_virtual_portgroups_in_vDC(host, user, pwd, port, dVSmor):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+
+
+
+
+
+
+
+def list_folders_and_vm_in_vdc(host, user, pwd, port, vDCmor, folder = None):
+    try:
+        init = (folder is None)
+
+        if init:
+            context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            context.verify_mode = ssl.CERT_NONE
+            service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+            if not service_instance:
+                result = "Could not connect to the specified host using specified username and password"
+                return result
+            atexit.register(connect.Disconnect, service_instance)
+            content = service_instance.RetrieveContent()
+            object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.Datacenter], True)
+            datacenters = object_view.view
+            object_view.Destroy()
+            for d in datacenters:
+                if d._moId == vDCmor:
+                    folder = d.vmFolder
+                    break
+
+        data = {
+            "id": str(folder._moId),
+            "name": folder.name,
+            "child_folders": [],
+            "vms": get_VMS2(folder)
+        }
+
+        for child_entity in folder.childEntity:
+            if child_entity._wsdlName=="Folder":
+                data["child_folders"].append(list_folders_and_vm_in_vdc(host, user, pwd, port, vDCmor,  child_entity))
+
+        return json.dumps(data, sort_keys=True) if init else data
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def get_VMS2(folder1):
+    VMS = []
+    for childentity in folder1.childEntity:
+        vmdict = {}
+        if childentity._wsdlName=="VirtualMachine":
+            vmdict["id"] = str(childentity._moId)
+            vmdict["name"] = str(childentity.name)
+            vmdict["status"] = str(childentity.summary.runtime.powerState)
+            VMS.append(vmdict)
+    return VMS
+
+
+
+
+
+
+
+
+
+
+
+
+
+

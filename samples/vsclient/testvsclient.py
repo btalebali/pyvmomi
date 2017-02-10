@@ -14,33 +14,27 @@ port=443
 ######### Unit tests #################################
 #################################### #################
 
-
-##### COMPUTE
-
 # server_infos = get_vcenterserver_infos(host,user,pwd,port)
 # print server_infos
+
+
+##### COMPUTE
 
 #vDCs = list_vDC(host,user,pwd,port)
 #print vDCs
 
-
 # vDCmor="datacenter-527"
 # clusters = list_Clusters_in_vDC(host,user,pwd,port, vDCmor)
 # print clusters
-
 
 #
 # clustermor="domain-c532"
 # ressourcepools = list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, clustermor)
 # print ressourcepools
 
-
-
-
 # clustermor="domain-c532"
 # hosts = list_hosts_in_cluster(host, user, pwd, port, clustermor)
 # print hosts
-
 
 
 
@@ -53,14 +47,11 @@ port=443
 
 
 
-
-
 ###### DATASTORE
 
 # vDCmor="datacenter-527"
 # datastorecluster = list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor)
 # print datastorecluster
-
 
 
 
@@ -72,7 +63,6 @@ port=443
 # datastore_mor = "datastore-2925"#"datastore-543"
 # datastore_infos = get_datastore_infos(host, user, pwd, port, datastore_mor)
 # print datastore_infos
-
 
 
 
@@ -100,3 +90,14 @@ port=443
 # dVSmor="dvs-3083"
 # distributed_virtual_portgroups = list_distributed_virtual_portgroups_in_vDC(host, user, pwd, port, dVSmor)
 # print distributed_virtual_portgroups
+
+
+######### Folders
+
+vDCmor="datacenter-527"
+folders = list_folders_and_vm_in_vdc(host, user, pwd, port, vDCmor)
+print folders
+
+
+
+######### clonage virtualMachine
