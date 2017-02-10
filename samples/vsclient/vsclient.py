@@ -199,6 +199,56 @@ def list_hosts_in_cluster(host, user, pwd, port, Clustermor):
 
 
 
+
+
+def list_modele_in_vDC(host, user, pwd, port, vDCmor ):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result={}
+        for obj in object_view.view:
+            vdcmor = get_vDCmor_by_vm(obj)
+            if vdcmor == vDCmor:
+                if "MarkAsTemplate" in obj.disabledMethod and not ("MarkAsVirtualMachine" in obj.disabledMethod):
+                    result[obj.name]=obj._moId
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def get_vDCmor_by_vm(obj):
+    parent=obj.parent
+    while parent._wsdlName != "Datacenter":
+        parent = parent.parent
+    return parent._moId
+
+
+
+
+
+
+
+
+
+
+
 def list_datastorecluster_in_vDC(host, user, pwd, port, vDCmor):
     """
     :param host:
