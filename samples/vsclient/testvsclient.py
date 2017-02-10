@@ -78,6 +78,6 @@ port=443
 
 ###### VirtualMachine
 
-# virtualmachine_mor = "vm-5736" #"vm-5520"#"vm-5781"
+# virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
 # virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, virtualmachine_mor)
 # print virtualmachine_infos

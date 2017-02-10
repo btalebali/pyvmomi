@@ -436,10 +436,14 @@ def get_vm_GuestNicInfos_infos(vm):
         dev["macAddress"]=guestnicinfos.macAddress
         dev["connected"] =guestnicinfos.connected
         # TODO  if guestnicinfos.dnsConfig incluse a NetDnsConfigInfos
-
-        dev["dnsConfig"] =
-
-        print dev["dnsConfig"]
-
+        dev["dnsConfig"]=None
+        aux = guestnicinfos.dnsConfig
+        if aux:
+            dnsConfig={}
+            dnsConfig["dhcp"]=aux.dhcp
+            dnsConfig["domainName"] =aux.domainName
+            dnsConfig["hostName"] =aux.hostName
+            dnsConfig["ipAddress"] =aux.ipAddress
+            dev["dnsConfig"] = dnsConfig
         devices.append(dev)
     return devices
