@@ -112,17 +112,24 @@ port=443
 
 # resourcepool_mor = "resgroup-2852"
 # datastore_mor = "datastore-543"
-# vm_name="testclonetemplate3"
-# template_or_vm_mor="vm-5641"
+# vm_name="testclonetemplate1"
+# template_or_vm_mor="vm-5781"
 #
-# new_vm = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
-# print new_vm
+# result = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
+# print result
+#
 
 
+# vm_mor = "vm-5843"
+# cpu = 3
+# ramMB = 2048
+#
+# result = update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB)
+# print result
 
-vm_mor = "vm-5837"
-cpu = 1
-ramMB = 2048
 
-new_vm = update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB)
-print new_vm
+new_capacity_virtualdisk_in_gb = 40  # unit = GB
+vm_mor = "vm-5843"
+disk_number=0
+vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
+print vm_new_vm

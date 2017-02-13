@@ -713,13 +713,12 @@ def WaitTask(task, actionName='job', hideResult=False):
         else:
             out = '%s completed successfully.' % actionName
     else:
-        a=task.info.error
         out = '%s did not complete successfully: %s' % (actionName, task.info.error)
         print out
         raise task.info.error  # should be a Fault... check XXX
 
     # may not always be applicable, but can't hurt.
-    return task.info.result
+    return task.info.state
 
 
 
@@ -735,15 +734,15 @@ def update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB):
             return result
         atexit.register(connect.Disconnect, service_instance)
         content = service_instance.RetrieveContent()
-        vm = get_obj(content, [vim.VirtualMachine], vm_mor)
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
 
         vmconf = vim.vm.ConfigSpec()
         vmconf.numCPUs = int(cpu)
         vmconf.memoryMB = int(ramMB)
         vmconf.cpuHotAddEnabled = True
         vmconf.memoryHotAddEnabled = True
-        task=vm.ReconfigVM_Task(spec=vmconf)
-        result = WaitTask(task, 'VM configure task')
+        task=vm_obj.ReconfigVM_Task(spec=vmconf)
+        result = WaitTask(task)
         return result
 
     except vmodl.MethodFault as e:
@@ -751,4 +750,54 @@ def update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB):
         return result
 
 
+def update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, unit_number=1):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
 
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+
+        new_capacity_in_kb = 1024 * 1024 * new_capacity_virtualdisk_in_gb
+        virtual_disk_device = None
+
+        for dev in vm_obj.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualDisk) :
+                    if dev.unitNumber == unit_number:
+                        virtual_disk_device = dev
+        disk_exist = True if virtual_disk_device else False
+        if disk_exist:
+            old_capacity_in_kb = virtual_disk_device.capacityInKB
+            if new_capacity_in_kb > old_capacity_in_kb:
+                disk_spec = vim.vm.device.VirtualDeviceSpec()
+                disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.edit
+                disk_spec.device = vim.vm.device.VirtualDisk()
+                disk_spec.device.key = virtual_disk_device.key
+                disk_spec.device.backing = virtual_disk_device.backing
+                disk_spec.device.backing.fileName = virtual_disk_device.backing.fileName
+                disk_spec.device.backing.diskMode = virtual_disk_device.backing.diskMode
+                disk_spec.device.controllerKey = virtual_disk_device.controllerKey
+                disk_spec.device.unitNumber = virtual_disk_device.unitNumber
+                disk_spec.device.capacityInKB = long(new_capacity_in_kb)
+            elif new_capacity_in_kb == old_capacity_in_kb:
+                return 'Disk capacity is the same. No change need to be done.'
+            else:
+                return 'Reducing Virtual Hard Disk Size is not supported at this time.'
+        else:
+            return 'Disk Not Found'
+        dev_changes = []
+        dev_changes.append(disk_spec)
+        spec = vim.vm.ConfigSpec()
+        spec.deviceChange = dev_changes
+        task = vm_obj.ReconfigVM_Task(spec=spec)
+        result = WaitTask(task)
+        return result
+
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
