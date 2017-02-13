@@ -36,29 +36,6 @@ import getpass
 from setting import *
 from copy import deepcopy
 
-"""
- Send an email
-"""
-
-
-def send_email(deploy_settings, ip_settings, output):
-    # Import smtplib for the actual sending function
-    import smtplib
-    from email.mime.text import MIMEText
-
-    me = os.getenv("SUDO_USER")  # who ran sudo
-    if me is None:
-        me = os.getenv("USER")  # will always be root when this scripts is run as sudo
-
-    email_body = "%s" % output
-    msg = MIMEText(email_body)
-    msg['Subject'] = "%s - VM deploy complete" % deploy_settings["new_vm_name"]
-    msg['From'] = deploy_settings["mailfrom"]
-    msg['To'] = me
-
-    s = smtplib.SMTP('localhost')
-    s.sendmail(deploy_settings["mailfrom"], [me], msg.as_string())
-    s.quit()
 
 
 """
@@ -107,6 +84,7 @@ def get_obj(content, vimtype, name):
 """
 
 
+
 def clone(deploy_settings, ip_settings):
     fqdn = "%s.%s" % (deploy_settings["new_vm_name"], ip_settings[0]["domain"])
 
@@ -118,6 +96,7 @@ def clone(deploy_settings, ip_settings):
                           pwd=deploy_settings["password"], port=int(deploy_settings["port"]), sslContext=context)
     except IOError, e:
         sys.exit("Unable to connect to vsphere server. Error message: %s" % e)
+
 
     # add a clean up routine
     atexit.register(Disconnect, si)
@@ -139,7 +118,6 @@ def clone(deploy_settings, ip_settings):
 
     # Relocation spec
     relospec = vim.vm.RelocateSpec()
-
     relospec.datastore = datastore
     relospec.pool = resource_pool
 
@@ -149,7 +127,7 @@ def clone(deploy_settings, ip_settings):
     devices = []
     adaptermaps = []
 
-"""
+
     # create a Network device for each static IP
     for key, ip in enumerate(ip_settings):
         # VM device
@@ -171,14 +149,14 @@ def clone(deploy_settings, ip_settings):
         nic.device.connectable.allowGuestControl = True
         devices.append(nic)
 
-        # guest NIC settings, i.e. "adapter map"
+        #guest NIC settings, i.e. "adapter map"
         guest_map = vim.vm.customization.AdapterMapping()
         guest_map.adapter = vim.vm.customization.IPSettings()
         guest_map.adapter.ip = vim.vm.customization.FixedIp()
         guest_map.adapter.ip.ipAddress = str(ip_settings[key]["ip"])
         guest_map.adapter.subnetMask = str(ip_settings[key]["subnet_mask"])
 
-        # these may not be set for certain IPs, e.g. storage IPs
+        #these may not be set for certain IPs, e.g. storage IPs
         try:
             guest_map.adapter.gateway = ip_settings[key]["gateway"]
         except:
@@ -216,20 +194,30 @@ def clone(deploy_settings, ip_settings):
     customspec.identity = ident
 
     # Clone spec
+    print template_vm.config
+
     clonespec = vim.vm.CloneSpec()
-    clonespec.location = relospec
-    clonespec.config = vmconf
-    clonespec.customization = customspec
-    clonespec.powerOn = True
+    #old
+    # clonespec.location = relospec
+    # clonespec.config = vmconf
+    # clonespec.customization = customspec
+    # clonespec.powerOn = False
+    # clonespec.template = False
+    #new
+    #clonespec.config = template_vm.config
+    clonespec.powerOn = False
     clonespec.template = False
+    clonespec.location = relospec
+
+    # print destfolder
+    # exit()
 
     # fire the clone task
-    task = template_vm.Clone(folder=destfolder, name=deploy_settings["new_vm_name"].title(), spec=clonespec)
+    task = template_vm.Clone(folder = destfolder, name = deploy_settings["new_vm_name"].title(), spec = clonespec)
     result = WaitTask(task, 'VM clone task')
 
-    # send notification
-    output=[]
-    send_email(deploy_settings, ip_settings, output)
+
+
 
 
 def main(**kwargs):
@@ -268,9 +256,9 @@ def main(**kwargs):
     clone(deploy_settings, ip_settings)
 
 
-"""
- Main program
-"""
+
+ #Main program
+
 if __name__ == "__main__":
     if getpass.getuser() != 'root':
         sys.exit("You must be root to run this.  Quitting.")
@@ -288,5 +276,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(**vars(args))
 
-      #--template "Ubuntu16.04 64bits" --hostname testclone  --cpus 2 --mem 2 --ips 172.17.117.137
+    #--template "ubuntu-server-12.4-64lts" --hostname testclone  --cpus 1 --mem 1 --ips 172.17.117.137
 

@@ -13,7 +13,6 @@ deploy_settings["vserver"]          = "172.17.117.104"
 deploy_settings["port"]             = 443
 deploy_settings["username"]         = "administrateur"
 deploy_settings["password"]         = "Pr0l0gue2014"
-deploy_settings["mailfrom"]         = 'root@example.com'
 
 """
 Networks
