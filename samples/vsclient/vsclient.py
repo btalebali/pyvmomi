@@ -856,18 +856,11 @@ def delete_nic_in_vm(host, user, pwd, port, vm_mor, unitNumber):
                 spec1.deviceChange = [virtual_nic_spec]
                 task = vm_obj.Reconfigure(spec=spec1)
                 r = WaitTask(task)
-        return r
+                return r
+        return "Network adapter not found"
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
-
-
-
-
-
-
-
-
 
 
 
@@ -901,20 +894,13 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
         atexit.register(connect.Disconnect, service_instance)
         content = service_instance.RetrieveContent()
         vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
-
         spec = vim.vm.ConfigSpec()
         nic_changes = []
-
         nic_spec = vim.vm.device.VirtualDeviceSpec()
         nic_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
-
         nic_spec.device = vim.vm.device.VirtualE1000()
-
         nic_spec.device.deviceInfo = vim.Description()
         nic_spec.device.deviceInfo.summary = 'vCenter API test'
-
-
-
         content = service_instance.RetrieveContent()
         if NET_TYPE == "vs":
             nic_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
@@ -928,11 +914,7 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
             port = vim.DistributedVirtualSwitchPortConnection()
             port.portgroupKey = portgroup_or_vs_mor
             port.switchUuid = net.config.distributedVirtualSwitch.uuid
-
-
             nic_spec.device.backing.port = port
-
-
         nic_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
         nic_spec.device.connectable.startConnected = True
         nic_spec.device.connectable.startConnected = True
@@ -941,16 +923,11 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
         nic_spec.device.connectable.status = 'untried'
         nic_spec.device.wakeOnLanEnabled = True
         nic_spec.device.addressType = 'assigned'
-
         nic_changes.append(nic_spec)
         spec.deviceChange = nic_changes
         task = vm_obj.ReconfigVM_Task(spec=spec)
         r = WaitTask(task)
         return r
-
-
-
-
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
