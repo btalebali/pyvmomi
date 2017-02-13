@@ -750,6 +750,9 @@ def update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB):
         return result
 
 
+
+
+
 def update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, unit_number=1):
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
@@ -760,12 +763,9 @@ def update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virt
             return result
         atexit.register(connect.Disconnect, service_instance)
         content = service_instance.RetrieveContent()
-
         vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
-
         new_capacity_in_kb = 1024 * 1024 * new_capacity_virtualdisk_in_gb
         virtual_disk_device = None
-
         for dev in vm_obj.config.hardware.device:
             if isinstance(dev, vim.vm.device.VirtualDisk) :
                     if dev.unitNumber == unit_number:
@@ -797,7 +797,161 @@ def update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virt
         task = vm_obj.ReconfigVM_Task(spec=spec)
         result = WaitTask(task)
         return result
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+def delete_all_nic_in_vm(host, user, pwd, port, vm_mor):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        r=[]
+        spec1=vim.vm.ConfigSpec()
+        spec1.deviceChange=[]
+        for dev in vm_obj.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualEthernetCard):
+                virtual_nic_spec = vim.vm.device.VirtualDeviceSpec()
+                virtual_nic_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                dev.deviceInfo.label = ""
+                virtual_nic_spec.device = dev
+                spec1.deviceChange = [virtual_nic_spec]
+                task = vm_obj.Reconfigure(spec=spec1)
+                r = WaitTask(task)
+        return r
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def delete_nic_in_vm(host, user, pwd, port, vm_mor, unitNumber):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        r=[]
+        spec1=vim.vm.ConfigSpec()
+        spec1.deviceChange=[]
+        for dev in vm_obj.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualEthernetCard) and dev.unitNumber== int(unitNumber):
+                virtual_nic_spec = vim.vm.device.VirtualDeviceSpec()
+                virtual_nic_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                dev.deviceInfo.label = ""
+                virtual_nic_spec.device = dev
+                spec1.deviceChange = [virtual_nic_spec]
+                task = vm_obj.Reconfigure(spec=spec1)
+                r = WaitTask(task)
+        return r
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor, NET_TYPE='vs'):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :param unitNumber:
+    :param portgroup_or_dvs_mor:
+    :param NET_TYPE:  vs or dvpg
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+
+        spec = vim.vm.ConfigSpec()
+        nic_changes = []
+
+        nic_spec = vim.vm.device.VirtualDeviceSpec()
+        nic_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+
+        nic_spec.device = vim.vm.device.VirtualE1000()
+
+        nic_spec.device.deviceInfo = vim.Description()
+        nic_spec.device.deviceInfo.summary = 'vCenter API test'
+
+
+
+        content = service_instance.RetrieveContent()
+        if NET_TYPE == "vs":
+            nic_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+            nic_spec.device.backing.useAutoDetect = False
+            net = get_obj(content, [vim.VmwareDistributedVirtualSwitch], portgroup_or_vs_mor)
+            nic_spec.device.backing.network = net
+            nic_spec.device.backing.deviceName = net.name
+        if NET_TYPE == "dvpg":
+            net = get_obj(content, [vim.DistributedVirtualPortgroup], portgroup_or_vs_mor)
+            nic_spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
+            port = vim.DistributedVirtualSwitchPortConnection()
+            port.portgroupKey = portgroup_or_vs_mor
+            port.switchUuid = net.config.distributedVirtualSwitch.uuid
+
+
+            nic_spec.device.backing.port = port
+
+
+        nic_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
+        nic_spec.device.connectable.startConnected = True
+        nic_spec.device.connectable.startConnected = True
+        nic_spec.device.connectable.allowGuestControl = True
+        nic_spec.device.connectable.connected = False
+        nic_spec.device.connectable.status = 'untried'
+        nic_spec.device.wakeOnLanEnabled = True
+        nic_spec.device.addressType = 'assigned'
+
+        nic_changes.append(nic_spec)
+        spec.deviceChange = nic_changes
+        task = vm_obj.ReconfigVM_Task(spec=spec)
+        r = WaitTask(task)
+        return r
+
+
+
 
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+

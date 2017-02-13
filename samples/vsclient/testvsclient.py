@@ -128,8 +128,21 @@ port=443
 # print result
 
 
-new_capacity_virtualdisk_in_gb = 40  # unit = GB
+# new_capacity_virtualdisk_in_gb = 40  # unit = GB
+# vm_mor = "vm-5843"
+# disk_number=0
+# vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
+# print vm_new_vm
+
+
+
+# vm_mor = "vm-5843"
+# result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
+# print result
+
+
 vm_mor = "vm-5843"
-disk_number=0
-vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
-print vm_new_vm
+portgroup_or_vs_mor= "dvportgroup-5733"#"network-540" #
+NET_TYPE="dvpg"
+result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor, NET_TYPE)
+print result
