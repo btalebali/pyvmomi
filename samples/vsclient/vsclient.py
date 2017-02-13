@@ -650,7 +650,7 @@ def get_VMS2(folder1):
     return VMS
 
 
-def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor, folder_mor ):
+def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor ):
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.verify_mode = ssl.CERT_NONE
@@ -663,7 +663,6 @@ def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_m
         datastore = get_obj(content, [vim.Datastore], datastore_mor)
         resourcepool = get_obj(content, [vim.ResourcePool], resourcepool_mor)
         template_vm = get_obj(content, [vim.VirtualMachine], template_or_vm_mor)
-        destfolder = get_obj(content, [vim.Folder], folder_mor)
 
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
@@ -675,7 +674,7 @@ def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_m
         clonespec.template = False
         clonespec.location = relospec
 
-        task = template_vm.Clone(folder = destfolder, name = vm_name, spec = clonespec)
+        task = template_vm.Clone(folder = template_vm.parent, name = vm_name, spec = clonespec)
         result = WaitTask(task, 'VM clone task')
         return result
 
@@ -695,7 +694,6 @@ def get_obj(content, vimtype, moId):
             obj = c
             break
     return obj
-
 
 
 """
@@ -725,6 +723,32 @@ def WaitTask(task, actionName='job', hideResult=False):
 
 
 
+
+
+def update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm = get_obj(content, [vim.VirtualMachine], vm_mor)
+
+        vmconf = vim.vm.ConfigSpec()
+        vmconf.numCPUs = int(cpu)
+        vmconf.memoryMB = int(ramMB)
+        vmconf.cpuHotAddEnabled = True
+        vmconf.memoryHotAddEnabled = True
+        task=vm.ReconfigVM_Task(spec=vmconf)
+        result = WaitTask(task, 'VM configure task')
+        return result
+
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
 
 
 

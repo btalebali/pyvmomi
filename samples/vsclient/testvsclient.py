@@ -110,14 +110,19 @@ port=443
 
 ######### Clonage virtualMachine or Modele
 
-resourcepool_mor = "resgroup-2852"
-datastore_mor = "datastore-543"
-folder_mor = "group-v528"
-vm_name="testclonetemplate3"
-template_or_vm_mor="vm-5641"
-
-result = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor,folder_mor )
-print result
-
+# resourcepool_mor = "resgroup-2852"
+# datastore_mor = "datastore-543"
+# vm_name="testclonetemplate3"
+# template_or_vm_mor="vm-5641"
+#
+# new_vm = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
+# print new_vm
 
 
+
+vm_mor = "vm-5837"
+cpu = 1
+ramMB = 2048
+
+new_vm = update_cpu_ram(host, user, pwd, port,vm_mor,cpu,ramMB)
+print new_vm
