@@ -29,9 +29,9 @@ port=443
 #
 #
 
-vDCmor="datacenter-527"
-vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
-print vdc_info
+# vDCmor="datacenter-527"
+# vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
+# print vdc_info
 
 
 # clustermor="domain-c532"

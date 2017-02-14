@@ -43,7 +43,7 @@ def get_vcenterserver_infos(host,user,pwd,port):
         result["apiVersion"] = vim_aboutinfos.apiVersion
         result["apiType"] = vim_aboutinfos.apiType
         result = json.dumps(result)
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
@@ -71,7 +71,7 @@ def list_vDC(host, user, pwd, port):
         for obj in object_view.view:
             result[obj.name]=obj._moId
         object_view.Destroy()
-        return result
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
