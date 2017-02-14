@@ -49,7 +49,6 @@ def get_vcenterserver_infos(host,user,pwd,port):
         return result
 
 
-
 def list_vDC(host, user, pwd, port):
     """
     :param host:
@@ -73,6 +72,48 @@ def list_vDC(host, user, pwd, port):
             result[obj.name]=obj._moId
         object_view.Destroy()
         return result
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+def get_vdc_info(host,user,pwd,port, vDCmor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.Datacenter], True)
+        result={}
+        for obj in object_view.view:
+            if obj._moId == vDCmor:
+                a=[]
+                for datastore in obj.datastore:
+                    a.append(datastore.name)
+                result['datastore']=a
+                net = []
+                for network in obj.network:
+                    net.append(network.name)
+                result['network'] = net
+                a = []
+                for cluster in obj.hostFolder.childEntity:
+                    for host in cluster.host:
+                        a.append(host.name)
+                result['hosts'] = a
+        object_view.Destroy()
+
+        return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
@@ -872,7 +913,7 @@ def delete_nic_in_vm(host, user, pwd, port, vm_mor, unitNumber):
 
 
 
-def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor, NET_TYPE='vs'):
+def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor):
     """
     :param host:
     :param user:
@@ -902,13 +943,13 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
         nic_spec.device.deviceInfo = vim.Description()
         nic_spec.device.deviceInfo.summary = 'vCenter API test'
         content = service_instance.RetrieveContent()
-        if NET_TYPE == "vs":
+        if 'network' in portgroup_or_vs_mor:
             nic_spec.device.backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
             nic_spec.device.backing.useAutoDetect = False
-            net = get_obj(content, [vim.VmwareDistributedVirtualSwitch], portgroup_or_vs_mor)
+            net = get_obj(content, [vim.Network], portgroup_or_vs_mor)
             nic_spec.device.backing.network = net
             nic_spec.device.backing.deviceName = net.name
-        if NET_TYPE == "dvpg":
+        if "portgroup" in portgroup_or_vs_mor:
             net = get_obj(content, [vim.DistributedVirtualPortgroup], portgroup_or_vs_mor)
             nic_spec.device.backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
             port = vim.DistributedVirtualSwitchPortConnection()
@@ -916,7 +957,6 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
             port.switchUuid = net.config.distributedVirtualSwitch.uuid
             nic_spec.device.backing.port = port
         nic_spec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
-        nic_spec.device.connectable.startConnected = True
         nic_spec.device.connectable.startConnected = True
         nic_spec.device.connectable.allowGuestControl = True
         nic_spec.device.connectable.connected = False
@@ -932,3 +972,71 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
         result="Caught vmodl fault : {}".format(e.msg)
         return result
 
+
+
+def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        ## Config ip for each nic adapter
+        adaptermaps=[]
+        for inputs in NIC:
+            adaptermap = vim.vm.customization.AdapterMapping()
+            adaptermap.adapter = vim.vm.customization.IPSettings()
+            isDHDCP = inputs['isDHCP']
+            if not isDHDCP:
+                print "static"
+                adaptermap.adapter.ip = vim.vm.customization.FixedIp()
+                adaptermap.adapter.ip.ipAddress = inputs['vm_ip']
+                adaptermap.adapter.subnetMask = inputs['subnet']
+                adaptermap.adapter.gateway = inputs['gateway']
+                adaptermap.adapter.dnsDomain = inputs['dnsdomain']
+                adaptermap.adapter.dnsServerList = inputs['dns']
+            else:
+                print "dhcp"
+                adaptermap.adapter.ip = vim.vm.customization.DhcpIpGenerator()
+            adaptermaps.append(adaptermap)
+
+        globalip = vim.vm.customization.GlobalIPSettings()
+        if NIC[0]['dns']:
+            globalip.dnsServerList = NIC[0]['dns']
+        else:
+            globalip.dnsServerList = ['8.8.8.8', '8.8.4.4']
+
+        guestfullname = vm_obj.config.guestFullName.lower()
+        if "linux" in guestfullname:
+        # Identity for linux OS
+            ident = vim.vm.customization.LinuxPrep(domain="doamin", hostName=vim.vm.customization.FixedName( name = "hostname"))
+        if "windows" in  guestfullname:
+            # Identity for Windows OS
+            ident = vim.vm.customization.Sysprep()
+            ident.guiUnattended = vim.vm.customization.GuiUnattended()
+            ident.guiUnattended.autoLogon = False  # the machine does not auto-logon
+            ident.guiUnattended.password = vim.vm.customization.Password()
+            ident.guiUnattended.password.value = "Pr0l0gue:2014"
+            ident.guiUnattended.password.plainText = True  # the password passed over is not encrypted
+            ident.userData = vim.vm.customization.UserData()
+            ident.userData.fullName = "useitcloud"
+            ident.userData.orgName = "Prologue"
+            ident.userData.computerName = vim.vm.customization.FixedName()
+            ident.userData.computerName.name = "hostname"
+            ident.identification = vim.vm.customization.Identification()
+
+
+        customspec = vim.vm.customization.Specification()
+        customspec.identity = ident
+        customspec.nicSettingMap = adaptermaps
+        customspec.globalIPSettings = globalip
+        task = vm_obj.CustomizeVM_Task(spec = customspec)
+        r = WaitTask(task)
+        return r
+    except vmodl.MethodFault as e:
+            result="Caught vmodl fault : {}".format(e.msg)
+            return result

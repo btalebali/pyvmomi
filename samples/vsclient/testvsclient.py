@@ -28,6 +28,12 @@ port=443
 # print clusters
 #
 #
+
+vDCmor="datacenter-527"
+vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
+print vdc_info
+
+
 # clustermor="domain-c532"
 # ressourcepools = list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, clustermor)
 # print ressourcepools
@@ -43,6 +49,11 @@ port=443
 # vDCmor="datacenter-527"
 # modeles = list_modele_in_vDC(host, user, pwd, port,vDCmor)
 # print modeles
+#{"UBUNTU1204-AMD-64BIT-VMware-tools-cloudinit": "vm-5146", "UBUNTU1204-AMD-64BIT-VMware-tools-cloudinit.old": "vm-5133", "Ubuntu12.04-VMware-Tool-64bits": "vm-1341",
+#  "Ubuntu14.04 LTS-VMwaretools-64bits": "vm-1485", "Ubuntu16.04 64bits": "vm-5621", "Windows 2008 Server R2": "vm-1348", "Windows 2012 R2 x86_64": "vm-1573", "ubunt14.04-LTS-x64": "vm-3719",
+# "ubuntu-server-12.4-64lts": "vm-3699", "ubuntu12.04 64 bits 2nic dhcp": "vm-5737", "ubuntu12.04-VMware-tools-64bits-eth0static": "vm-1674"}
+
+
 #
 #
 #
@@ -112,12 +123,12 @@ port=443
 
 # resourcepool_mor = "resgroup-2852"
 # datastore_mor = "datastore-543"
-# vm_name="testclonetemplate1"
-# template_or_vm_mor="vm-5781"
+# vm_name="testclonetemplate0"
+# template_or_vm_mor="vm-1573" # win2012 R2 vm-1573
 #
 # result = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
 # print result
-#
+
 
 
 # vm_mor = "vm-5843"
@@ -136,23 +147,46 @@ port=443
 
 
 
-# vm_mor = "vm-5843"
+# vm_mor = "vm-5850" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 # result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 # print result
 
 
-# vm_mor = "vm-5843"
-# unitNumber= "10"
+# vm_mor = "vm-5857"
+
 # result = delete_nic_in_vm(host, user, pwd, port, vm_mor, unitNumber)
 # print result
-
-
-# vm_mor = "vm-5843"
-# portgroup_or_vs_mor= "dvportgroup-5733"#"network-540" #
-# NET_TYPE="dvpg"
-# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor, NET_TYPE)
+#
+#
+# vm_mor = "vm-5857"
+# portgroup_or_vs_mor1 = "dvportgroup-5746"   #"network-540" #
+#
+# portgroup_or_vs_mor2 = "network-540"        #"network-540" #
+#
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
+# print result
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
 # print result
 
 
+# vm_mor = "vm-5850"
+
+# nic config in order
+# nic_config=[{'isDHCP' : True,
+#           'vm_ip' : '10.10.10.2',
+#           'subnet' : '255.255.255.0',
+#           'gateway' : '10.10.10.1',
+#           'dns' : ['8.8.8.8', '8.8.4.4'],
+#           'dnsdomain' : 'prologue.prl',
+#           'hostname':'uicb'
+#             },
+#             {'isDHCP' : True}
+#             ]
+#
+#
+# result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config)
+# print result
 
 
+# virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, vm_mor)
+# print virtualmachine_infos
