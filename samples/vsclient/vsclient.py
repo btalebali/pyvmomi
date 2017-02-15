@@ -122,6 +122,67 @@ def get_vdc_info(host,user,pwd,port, vDCmor):
 
 
 
+
+
+
+def get_cluster_info(host,user,pwd,port, clustermor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.ClusterComputeResource], True)
+        result={}
+        for obj in object_view.view:
+            if obj._moId == clustermor:
+                a=[]
+                for datastore in obj.datastore:
+                    info={"name":datastore.name,
+                           "moId": datastore._moId,
+                           "capacity":datastore.summary.capacity
+                           }
+                    a.append(info)
+                result['datastore']=a
+                net = []
+                for network in obj.network:
+                    info={"name":network.name,
+                           "moId": network._moId,
+                          }
+                    net.append(info)
+                result['network'] = net
+                a = []
+                for host in obj.host:
+                    a.append(host.name)
+                result['hosts'] = a
+                result['totalCPU'] = obj.summary.totalCpu
+                result['totalRAM'] = obj.summary.totalMemory
+
+        object_view.Destroy()
+
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+
+
+
+
 def list_Clusters_in_vDC(host, user, pwd, port, vDCmor):
     """
     :param host:
@@ -974,7 +1035,7 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
 
 
 
-def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC):
+def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC,hostname,rootpassword):
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.verify_mode = ssl.CERT_NONE
@@ -992,7 +1053,6 @@ def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC):
             adaptermap.adapter = vim.vm.customization.IPSettings()
             isDHDCP = inputs['isDHCP']
             if not isDHDCP:
-                print "static"
                 adaptermap.adapter.ip = vim.vm.customization.FixedIp()
                 adaptermap.adapter.ip.ipAddress = inputs['vm_ip']
                 adaptermap.adapter.subnetMask = inputs['subnet']
@@ -1000,7 +1060,6 @@ def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC):
                 adaptermap.adapter.dnsDomain = inputs['dnsdomain']
                 adaptermap.adapter.dnsServerList = inputs['dns']
             else:
-                print "dhcp"
                 adaptermap.adapter.ip = vim.vm.customization.DhcpIpGenerator()
             adaptermaps.append(adaptermap)
 
@@ -1013,22 +1072,22 @@ def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC):
         guestfullname = vm_obj.config.guestFullName.lower()
         if "linux" in guestfullname:
         # Identity for linux OS
-            ident = vim.vm.customization.LinuxPrep(domain="doamin", hostName=vim.vm.customization.FixedName( name = "hostname"))
+            ident = vim.vm.customization.LinuxPrep(domain="doamin", hostName=vim.vm.customization.FixedName( name = hostname))
         if "windows" in  guestfullname:
             # Identity for Windows OS
             ident = vim.vm.customization.Sysprep()
             ident.guiUnattended = vim.vm.customization.GuiUnattended()
             ident.guiUnattended.autoLogon = False  # the machine does not auto-logon
             ident.guiUnattended.password = vim.vm.customization.Password()
-            ident.guiUnattended.password.value = "Pr0l0gue:2014"
+            ident.guiUnattended.password.value = rootpassword
             ident.guiUnattended.password.plainText = True  # the password passed over is not encrypted
             ident.userData = vim.vm.customization.UserData()
-            ident.userData.fullName = "useitcloud"
-            ident.userData.orgName = "Prologue"
+            ident.userData.fullName = "Pyvmomi"
+            ident.userData.orgName = "Pyvmomi"
             ident.userData.computerName = vim.vm.customization.FixedName()
-            ident.userData.computerName.name = "hostname"
+            ident.userData.computerName.name = hostname
             ident.identification = vim.vm.customization.Identification()
-
+            # TODO join to domain
 
         customspec = vim.vm.customization.Specification()
         customspec.identity = ident

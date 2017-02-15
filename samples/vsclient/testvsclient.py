@@ -33,6 +33,11 @@ port=443
 # vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
 # print vdc_info
 
+# clustermor="domain-c532"
+# cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
+# print cluster_info
+
+
 
 # clustermor="domain-c532"
 # ressourcepools = list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, clustermor)
@@ -147,9 +152,9 @@ port=443
 
 
 
-# vm_mor = "vm-5850" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
-# result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
-# print result
+vm_mor = "vm-5895" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
+print result
 
 
 # vm_mor = "vm-5857"
@@ -159,33 +164,34 @@ port=443
 #
 #
 # vm_mor = "vm-5857"
-# portgroup_or_vs_mor1 = "dvportgroup-5746"   #"network-540" #
+portgroup_or_vs_mor1 = "dvportgroup-5746"   #"network-540" #
 #
-# portgroup_or_vs_mor2 = "network-540"        #"network-540" #
+portgroup_or_vs_mor2 = "network-540"        #"network-540" #
 #
-# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
-# print result
-# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
-# print result
+result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
+print result
+result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
+print result
 
 
 # vm_mor = "vm-5850"
 
 # nic config in order
-# nic_config=[{'isDHCP' : True,
-#           'vm_ip' : '10.10.10.2',
-#           'subnet' : '255.255.255.0',
-#           'gateway' : '10.10.10.1',
-#           'dns' : ['8.8.8.8', '8.8.4.4'],
-#           'dnsdomain' : 'prologue.prl',
-#           'hostname':'uicb'
-#             },
-#             {'isDHCP' : True}
-#             ]
-#
-#
-# result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config)
-# print result
+nic_config=[{'isDHCP' : False,
+          'vm_ip' : '10.10.10.2',
+          'subnet' : '255.255.255.0',
+          'gateway' : '10.10.10.1',
+          'dns' : ['8.8.8.8', '8.8.4.4'],
+          'dnsdomain' : 'prologue.prl',
+          'hostname':'uicb'
+             },
+            {'isDHCP' : True},
+            ]
+hostname="uicbm"
+rootpassword="Pr0l0gue:2014"
+
+result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, rootpassword)
+print result
 
 
 # virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, vm_mor)
