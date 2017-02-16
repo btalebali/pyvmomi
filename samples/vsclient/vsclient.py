@@ -782,6 +782,146 @@ def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_m
         result="Caught vmodl fault : {}".format(e.msg)
         return result
 
+def clone_object2(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        datastore = get_obj(content, [vim.Datastore], datastore_mor)
+        resourcepool = get_obj(content, [vim.ResourcePool], resourcepool_mor)
+        template_vm = get_obj(content, [vim.VirtualMachine], template_or_vm_mor)
+
+        relospec = vim.vm.RelocateSpec()
+        relospec.datastore = datastore
+        relospec.pool = resourcepool
+        # clonespec = vim.vm.CloneSpec()
+        # clonespec.powerOn = False
+        # clonespec.template = False
+        # clonespec.location = relospec
+
+        # Networking self.config for VM and guest OS
+        devices = []
+        adaptermaps = []
+
+        # add existing NIC devices from template to our list of NICs
+        # to be created
+        try:
+            for device in template_vm.config.hardware.device:
+
+                if hasattr(device, 'addressType'):
+                    # this is a VirtualEthernetCard, so we'll delete it
+                    nic = vim.vm.device.VirtualDeviceSpec()
+                    nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+                    nic.device = device
+                    devices.append(nic)
+        except:
+            # not the most graceful handling, but unable to reproduce
+            # user's issues in #57 at this time.
+            pass
+        ip_settings = [
+                  {'ip': '10.10.10.3',
+                   'subnet_mask': '255.255.255.0',
+                   'gateway': '10.10.10.1',
+                   'dns': ['8.8.8.8', '8.8.4.4'],
+                   'domain': 'prologue.prl'
+                       }]
+        # create a Network device for each static IP
+        for key, ip in enumerate(ip_settings):
+            # VM device
+            nic = vim.vm.device.VirtualDeviceSpec()
+            # or edit if a device exists
+            nic.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+            nic.device = vim.vm.device.VirtualVmxnet3()
+            nic.device.wakeOnLanEnabled = True
+            nic.device.addressType = 'assigned'
+            # 4000 seems to be the value to use for a vmxnet3 device
+            nic.device.key = 4000
+            nic.device.deviceInfo = vim.Description()
+            net = get_obj(content, [vim.Network], "network-540")
+            #nic.device.deviceInfo.label = 'Adaptateur reseau 1'#'Network Adapter %s' % (key + 1)
+            #nic.device.deviceInfo.summary = "summary"
+            nic.device.backing = (vim.vm.device.VirtualEthernetCard.NetworkBackingInfo())
+            nic.device.backing.network = net
+            nic.device.backing.deviceName = net.name
+            nic.device.backing.useAutoDetect = False
+            nic.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo()
+            nic.device.connectable.startConnected = True
+            nic.device.connectable.allowGuestControl = True
+            devices.append(nic)
+
+            # guest NIC settings, i.e. 'adapter map'
+            guest_map = vim.vm.customization.AdapterMapping()
+            guest_map.adapter = vim.vm.customization.IPSettings()
+            guest_map.adapter.ip = vim.vm.customization.FixedIp()
+            guest_map.adapter.ip.ipAddress = str(ip_settings[key]['ip'])
+            guest_map.adapter.subnetMask = str(ip_settings[key]['subnet_mask'])
+
+            # these may not be set for certain IPs
+            try:
+                guest_map.adapter.gateway = ip_settings[key]['gateway']
+            except:
+                pass
+
+            try:
+                guest_map.adapter.dnsDomain = ip_settings[key]['domain']
+            except:
+                pass
+
+            adaptermaps.append(guest_map)
+
+        # VM config spec
+        vmconf = vim.vm.ConfigSpec()
+        vmconf.numCPUs = 2
+        vmconf.memoryMB = 1024
+        vmconf.cpuHotAddEnabled = True
+        vmconf.memoryHotAddEnabled = True
+        vmconf.deviceChange = devices
+
+        # DNS settings
+        globalip = vim.vm.customization.GlobalIPSettings()
+        globalip.dnsServerList = ['8.8.8.8']
+        globalip.dnsSuffixList = "prologue.prl"
+
+        # Hostname settings
+        ident = vim.vm.customization.LinuxPrep()
+        ident.domain = "prologue.prl"
+        ident.hostName = vim.vm.customization.FixedName()
+        ident.hostName.name = "hostname"
+
+        customspec = vim.vm.customization.Specification()
+        customspec.nicSettingMap = adaptermaps
+        customspec.globalIPSettings = globalip
+        customspec.identity = ident
+
+        # Clone spec
+        clonespec = vim.vm.CloneSpec()
+        clonespec.location = relospec
+        #clonespec.config = vmconf
+        clonespec.customization = customspec
+        clonespec.powerOn = False
+        clonespec.template = False
+
+
+        # print (clonespec)
+        # exit()
+        task = template_vm.Clone(folder=template_vm.parent, name=vm_name, spec=clonespec)
+        result = WaitTask(task, 'VM clone task')
+        return result
+
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+
+
 
 
 #Get the vsphere object associated with a given text name
@@ -1158,8 +1298,6 @@ def get_snapshots_in_vm(host, user, pwd, port, vm_mor):
     :param vm_mor:
     :return:
     """
-
-
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.verify_mode = ssl.CERT_NONE
@@ -1170,13 +1308,17 @@ def get_snapshots_in_vm(host, user, pwd, port, vm_mor):
         atexit.register(connect.Disconnect, service_instance)
         content = service_instance.RetrieveContent()
         object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
-        result={}
+        result=[]
         for vm in object_view.view:
             if vm._moId == vm_mor:
-                snapshots = vm.snapshot
-                for snapshot in snapshots:
-                    print snapshot
-
+                snapshot = vm.snapshot
+                if snapshot:
+                    vmsnapshotTree = snapshot.rootSnapshotList
+                    while vmsnapshotTree :
+                        snap={"name":vmsnapshotTree[0].name,
+                            "id":vmsnapshotTree[0].id}
+                        result.append(snap)
+                        vmsnapshotTree = vmsnapshotTree[0].childSnapshotList
         object_view.Destroy()
         return json.dumps(result,sort_keys=True)
     except vmodl.MethodFault as e:

@@ -127,14 +127,16 @@ port=443
 
 ######### Clonage virtualMachine or Modele
 
-# resourcepool_mor = "resgroup-2852"
-# datastore_mor = "datastore-543"
-# vm_name="testclonetemplate0"
-# template_or_vm_mor="vm-1573" # win2012 R2 vm-1573
-#
-# result = clone_object(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
+resourcepool_mor = "resgroup-2852"
+datastore_mor = "datastore-543"
+vm_name="testclonetemplate0"
+template_or_vm_mor="vm-5621" # win2012 R2 vm-1573
+
+#result = clone_object2(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
 # print result
 
+result = clone_object2(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
+print result
 
 
 # vm_mor = "vm-5843"
@@ -213,11 +215,12 @@ print result
 virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
 
-"""
+
 ### Snapshot
 vm_mor="vm-5906"
 result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)
-
+print result
+"""
 # create snapshot
 #
 # revert to snapshot
