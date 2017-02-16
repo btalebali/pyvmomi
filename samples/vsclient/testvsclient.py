@@ -4,6 +4,7 @@
 
 
 from samples.vsclient.vsclient import *
+import time,json
 
 host= "172.17.117.104"
 user= "administrateur"
@@ -92,7 +93,7 @@ port=443
 # ###### VirtualMachine
 #
 # virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
-# virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, virtualmachine_mor)
+# virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor)
 # print virtualmachine_infos
 #
 #
@@ -151,48 +152,73 @@ port=443
 # print vm_new_vm
 
 
-
-vm_mor = "vm-5895" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+"""
+vm_mor = "vm-5897" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 print result
 
 
-# vm_mor = "vm-5857"
 
+# vm_mor = "vm-5857"
 # result = delete_nic_in_vm(host, user, pwd, port, vm_mor, unitNumber)
 # print result
-#
-#
+
+
 # vm_mor = "vm-5857"
-portgroup_or_vs_mor1 = "dvportgroup-5746"   #"network-540" #
-#
-portgroup_or_vs_mor2 = "network-540"        #"network-540" #
-#
+portgroup_or_vs_mor1 = "dvportgroup-5733"   #vlan1 dhcp
+portgroup_or_vs_mor2 = "dvportgroup-5746"        #"network-540" #
+portgroup_or_vs_mor3= "network-540"
+
+
 result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
 print result
 result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
 print result
-
+result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor3)
+print result
 
 # vm_mor = "vm-5850"
 
-# nic config in order
-nic_config=[{'isDHCP' : False,
-          'vm_ip' : '10.10.10.2',
-          'subnet' : '255.255.255.0',
-          'gateway' : '10.10.10.1',
-          'dns' : ['8.8.8.8', '8.8.4.4'],
-          'dnsdomain' : 'prologue.prl',
-          'hostname':'uicb'
+#nic config in order
+nic_config=[{'isDHCP' : True},
+            {'isDHCP': False,
+             'vm_ip': '10.10.10.3',
+             'subnet': '255.255.255.0',
+             'gateway': '10.10.10.1',
+             'dns': ['8.8.8.8', '8.8.4.4'],
              },
             {'isDHCP' : True},
             ]
-hostname="uicbm"
-rootpassword="Pr0l0gue:2014"
+hostname = "vm1"
+domaine = "prologue.prl"
+rootpassword="" # Only for windows
 
-result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, rootpassword)
+
+result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, rootpassword)
 print result
 
 
-# virtualmachine_infos = get_virtualmachine_infos(host, user, pwd, port, vm_mor)
-# print virtualmachine_infos
+
+##Actions on VM
+result = poweron_vm(host, user, pwd, port, vm_mor)
+print result
+
+
+
+
+timeout_in_mn=10   # 15 for windows os
+result = wait_for_tools(host, user, pwd, port, vm_mor, timeout_in_mn)
+print result
+
+virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
+print virtualmachine_infos
+
+"""
+### Snapshot
+vm_mor="vm-5906"
+result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)
+
+# create snapshot
+#
+# revert to snapshot
+#

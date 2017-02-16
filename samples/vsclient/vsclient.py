@@ -499,7 +499,7 @@ def sum_memory_vms(vms):
 
 
 
-def get_virtualmachine_infos(host, user, pwd, port, virtualmachine_mor):
+def get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor):
     """
     :param host:
     :param user:
@@ -769,8 +769,6 @@ def clone_object(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_m
         relospec = vim.vm.RelocateSpec()
         relospec.datastore = datastore
         relospec.pool = resourcepool
-
-
         clonespec = vim.vm.CloneSpec()
         clonespec.powerOn = False
         clonespec.template = False
@@ -1035,7 +1033,7 @@ def add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or
 
 
 
-def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC,hostname,rootpassword):
+def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC,hostname,domaine, rootpassword):
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.verify_mode = ssl.CERT_NONE
@@ -1057,22 +1055,25 @@ def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC,hostname,rootpasswor
                 adaptermap.adapter.ip.ipAddress = inputs['vm_ip']
                 adaptermap.adapter.subnetMask = inputs['subnet']
                 adaptermap.adapter.gateway = inputs['gateway']
-                adaptermap.adapter.dnsDomain = inputs['dnsdomain']
-                adaptermap.adapter.dnsServerList = inputs['dns']
+                #adaptermap.adapter.dnsDomain = inputs['dnsdomain']
+                #adaptermap.adapter.dnsServerList = inputs['dns']
             else:
                 adaptermap.adapter.ip = vim.vm.customization.DhcpIpGenerator()
             adaptermaps.append(adaptermap)
 
         globalip = vim.vm.customization.GlobalIPSettings()
-        if NIC[0]['dns']:
+        if hasattr(NIC[0],'dns') and NIC[0]['dns']:
             globalip.dnsServerList = NIC[0]['dns']
         else:
-            globalip.dnsServerList = ['8.8.8.8', '8.8.4.4']
+            globalip.dnsServerList = ['8.8.8.8', '8.8.4.4'] # default dns
+
+        # print globalip.dnsServerList
+        # exit()
 
         guestfullname = vm_obj.config.guestFullName.lower()
         if "linux" in guestfullname:
         # Identity for linux OS
-            ident = vim.vm.customization.LinuxPrep(domain="doamin", hostName=vim.vm.customization.FixedName( name = hostname))
+            ident = vim.vm.customization.LinuxPrep(domain=domaine, hostName=vim.vm.customization.FixedName( name = hostname))
         if "windows" in  guestfullname:
             # Identity for Windows OS
             ident = vim.vm.customization.Sysprep()
@@ -1093,9 +1094,91 @@ def customize_nics_in_vm(host, user, pwd, port, vm_mor, NIC,hostname,rootpasswor
         customspec.identity = ident
         customspec.nicSettingMap = adaptermaps
         customspec.globalIPSettings = globalip
+
         task = vm_obj.CustomizeVM_Task(spec = customspec)
         r = WaitTask(task)
         return r
     except vmodl.MethodFault as e:
             result="Caught vmodl fault : {}".format(e.msg)
             return result
+
+
+
+def poweron_vm(host, user, pwd, port, vm_mor):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        task=vm_obj.PowerOnVM_Task()
+        result = WaitTask(task)
+        return result
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def wait_for_tools(host, user, pwd, port, vm_mor,timeout_in_mn):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :param timeout_in_mn:
+    :return:
+    """
+    timeout = 60 * timeout_in_mn
+    cpt = 0
+    while cpt <  timeout:
+        cpt=cpt+5
+        time.sleep(5)
+        virtualmachine_info = get_virtualmachine_info(host, user, pwd, port, vm_mor)
+        r= json.loads(virtualmachine_info)
+        if  r['tools']['toolsStatus'] == "toolsOk" and r['tools']['toolsRunningStatus'] == "guestToolsRunning" and r["GuestNicInfos"]:
+            result = "Tools are running"
+            return result
+    return "Timeout expired"
+
+
+
+
+
+def get_snapshots_in_vm(host, user, pwd, port, vm_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+
+
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result={}
+        for vm in object_view.view:
+            if vm._moId == vm_mor:
+                snapshots = vm.snapshot
+                for snapshot in snapshots:
+                    print snapshot
+
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
