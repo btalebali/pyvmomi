@@ -144,8 +144,7 @@ def main():
 
     elif operation in ['remove', 'revert']:
         snapshot_name = inputs['snapshot_name']
-        snap_obj = get_snapshots_by_name_recursively(
-                            vm.snapshot.rootSnapshotList, snapshot_name)
+        snap_obj = get_snapshots_by_name_recursively(vm.snapshot.rootSnapshotList, snapshot_name)
         # if len(snap_obj) is 0; then no snapshots with specified name
         if len(snap_obj) == 1:
             snap_obj = snap_obj[0].snapshot

@@ -1324,3 +1324,119 @@ def get_snapshots_in_vm(host, user, pwd, port, vm_mor):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+
+
+
+def create_snapshot_in_vm(host, user, pwd, port, vm_mor,snapshot_name):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result=[]
+        for vm in object_view.view:
+            if vm._moId == vm_mor:
+                task = vm.CreateSnapshot_Task(name=snapshot_name,
+                                              description="Snapshot",
+                                              memory=True,
+                                              quiesce=False)
+                result = WaitTask(task)
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+def revert_to_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result=[]
+        for vm in object_view.view:
+            if vm._moId == vm_mor:
+                snap_obj = get_snapshots_by_name_recursively(vm.snapshot.rootSnapshotList, snapshot_name)
+                if len(snap_obj) == 1:
+                    snap_obj = snap_obj[0].snapshot
+                    task = snap_obj.RevertToSnapshot_Task()
+                    result = WaitTask(task)
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def get_snapshots_by_name_recursively(snapshots, snapname):
+    snap_obj = []
+    for snapshot in snapshots:
+        if snapshot.name == snapname:
+            snap_obj.append(snapshot)
+        else:
+            snap_obj = snap_obj + get_snapshots_by_name_recursively(
+                                    snapshot.childSnapshotList, snapname)
+    return snap_obj
+
+
+def delete_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.VirtualMachine], True)
+        result=[]
+        for vm in object_view.view:
+            if vm._moId == vm_mor:
+                snap_obj = get_snapshots_by_name_recursively(vm.snapshot.rootSnapshotList, snapshot_name)
+                if len(snap_obj) == 1:
+                    snap_obj = snap_obj[0].snapshot
+                    task = snap_obj.RemoveSnapshot_Task(True)
+                    result = WaitTask(task)
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result

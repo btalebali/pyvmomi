@@ -127,16 +127,16 @@ port=443
 
 ######### Clonage virtualMachine or Modele
 
-resourcepool_mor = "resgroup-2852"
-datastore_mor = "datastore-543"
-vm_name="testclonetemplate0"
-template_or_vm_mor="vm-5621" # win2012 R2 vm-1573
+# resourcepool_mor = "resgroup-2852"
+# datastore_mor = "datastore-543"
+# vm_name="testclonetemplate0"
+# template_or_vm_mor="vm-5621" # win2012 R2 vm-1573
 
 #result = clone_object2(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
 # print result
 
-result = clone_object2(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
-print result
+# result = clone_object2(host, user, pwd, port,vm_name, template_or_vm_mor, datastore_mor, resourcepool_mor )
+# print result
 
 
 # vm_mor = "vm-5843"
@@ -154,7 +154,7 @@ print result
 # print vm_new_vm
 
 
-"""
+
 vm_mor = "vm-5897" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 print result
@@ -217,11 +217,29 @@ print virtualmachine_infos
 
 
 ### Snapshot
-vm_mor="vm-5906"
-result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)
-print result
-"""
+# vm_mor="vm-5906"
+# result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)
+# print result
+
 # create snapshot
+
+# vm_mor="vm-5906"
+# snapshot_name="1000"
+# result = create_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
+# print result
 #
-# revert to snapshot
 #
+# vm_mor="vm-5906"
+# snapshot_name="1000"
+# result = create_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
+
+
+#
+# vm_mor="vm-5906"
+# snapshot_name="1645"
+# result = revert_to_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
+
+
+# vm_mor="vm-5906"
+# snapshot_name="1641"
+# result = delete_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
