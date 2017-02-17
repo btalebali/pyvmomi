@@ -30,9 +30,9 @@ port=443
 #
 #
 
-# vDCmor="datacenter-527"
-# vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
-# print vdc_info
+vDCmor="datacenter-527"
+vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
+print vdc_info
 
 # clustermor="domain-c532"
 # cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
@@ -116,6 +116,13 @@ port=443
 # print distributed_virtual_portgroups
 #
 #
+# result = create_distributed_virtual_portgroups_in_distributed_vswitch()
+# print result
+#
+
+
+
+#
 # ######### Folders
 #
 # vDCmor="datacenter-527"
@@ -153,7 +160,7 @@ port=443
 # vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
 # print vm_new_vm
 
-
+"""
 
 vm_mor = "vm-5897" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
@@ -167,8 +174,8 @@ print result
 
 
 # vm_mor = "vm-5857"
-portgroup_or_vs_mor1 = "dvportgroup-5733"   #vlan1 dhcp
-portgroup_or_vs_mor2 = "dvportgroup-5746"        #"network-540" #
+portgroup_or_vs_mor1 = "dvportgroup-5733"           #vlan1 dhcp
+portgroup_or_vs_mor2 = "dvportgroup-5746"           #"network-540" #
 portgroup_or_vs_mor3= "network-540"
 
 
@@ -193,10 +200,10 @@ nic_config=[{'isDHCP' : True},
             ]
 hostname = "vm1"
 domaine = "prologue.prl"
-rootpassword="" # Only for windows
+adminpassword= "" # Only for windows
 
 
-result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, rootpassword)
+result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, adminpassword)
 print result
 
 
@@ -212,10 +219,12 @@ timeout_in_mn=10   # 15 for windows os
 result = wait_for_tools(host, user, pwd, port, vm_mor, timeout_in_mn)
 print result
 
+
+
 virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
 
-
+"""
 ### Snapshot
 # vm_mor="vm-5906"
 # result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)

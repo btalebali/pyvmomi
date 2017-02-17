@@ -111,6 +111,9 @@ def get_vdc_info(host,user,pwd,port, vDCmor):
                     for host in cluster.host:
                         a.append(host.name)
                 result['hosts'] = a
+                result['name'] = obj.name
+                result['moId'] = obj._moId
+
         object_view.Destroy()
 
         return json.dumps(result,sort_keys=True)
@@ -1281,7 +1284,7 @@ def wait_for_tools(host, user, pwd, port, vm_mor,timeout_in_mn):
         virtualmachine_info = get_virtualmachine_info(host, user, pwd, port, vm_mor)
         r= json.loads(virtualmachine_info)
         if  r['tools']['toolsStatus'] == "toolsOk" and r['tools']['toolsRunningStatus'] == "guestToolsRunning" and r["GuestNicInfos"]:
-            result = "Tools are running"
+            result = "customization completed"
             return result
     return "Timeout expired"
 
