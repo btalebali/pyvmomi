@@ -247,9 +247,9 @@ virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
 """
 
-# vm_mor = "vm-5641"
-# link = generate_html5_console(host, user, pwd, port, vm_mor)
-# print link
+vm_mor = "vm-5641"
+link = generate_html5_console(host, user, pwd, port, vm_mor)
+print link
 
 
 ### Snapshot
