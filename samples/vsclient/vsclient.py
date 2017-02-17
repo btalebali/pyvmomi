@@ -563,6 +563,168 @@ def get_vm_virtualDisk_infos(vm):
             dev["label"] = device.deviceInfo.label
             devices.append(dev)
     return devices
+def get_vm_disks(host, user, pwd, port, vm_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        result=[]
+        for device in vm_obj.config.hardware.device:
+            if device._wsdlName == "VirtualDisk" :
+                dev={}
+                dev["capacityInKB"] = device.capacityInKB
+                dev["label"] = device.deviceInfo.label
+                dev["unitNumber"] = device.unitNumber
+                result.append(dev)
+        return json.dumps(result, sort_keys=True)
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+def add_disk_in_vm(host, user, pwd, port,vm_mor, disk_size_in_gb, disk_type = 'thin'):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :param datastore_mor:
+    :param disk_size_in_gb:
+    :param unit_number:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm = get_obj(content, [vim.VirtualMachine], vm_mor)
+        result=[]
+        spec = vim.vm.ConfigSpec()
+        for dev in vm.config.hardware.device:
+            if hasattr(dev.backing, 'fileName'):
+                unit_number = int(dev.unitNumber) + 1
+                # unit_number 7 reserved for scsi controller
+                if unit_number == 7:
+                    unit_number += 1
+                if unit_number >= 16:
+                    return "we don't support this many disks"
+
+            if isinstance(dev, vim.vm.device.VirtualSCSIController):
+                controller = dev
+        dev_changes = []
+        new_disk_kb = int(disk_size_in_gb) * 1024 * 1024
+        disk_spec = vim.vm.device.VirtualDeviceSpec()
+        disk_spec.fileOperation = "create"
+        disk_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        disk_spec.device = vim.vm.device.VirtualDisk()
+        disk_spec.device.backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo()
+        if disk_type == 'thin':
+            disk_spec.device.backing.thinProvisioned = True
+        disk_spec.device.backing.diskMode = 'persistent'
+        disk_spec.device.unitNumber = unit_number
+        disk_spec.device.capacityInKB = new_disk_kb
+        disk_spec.device.controllerKey = controller.key
+        dev_changes.append(disk_spec)
+        spec.deviceChange = dev_changes
+        task = vm.ReconfigVM_Task(spec=spec)
+        result = WaitTask(task, 'VM clone task')
+        return result
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+
+
+
+
+def delete_disk_in_vm(host, user, pwd, port,vm_mor, unit_number):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :param datastore_mor:
+    :param disk_size_in_gb:
+    :param unit_number:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        vm = get_obj(content, [vim.VirtualMachine], vm_mor)
+
+        virtual_hdd_device = None
+        for dev in vm.config.hardware.device:
+            if isinstance(dev, vim.vm.device.VirtualDisk) and dev.unitNumber == int(unit_number):
+                virtual_hdd_device = dev
+        if not virtual_hdd_device:
+            raise RuntimeError('Virtual {} could not be found.'.format(virtual_hdd_device))
+
+        virtual_hdd_spec = vim.vm.device.VirtualDeviceSpec()
+        virtual_hdd_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.remove
+        virtual_hdd_spec.device = virtual_hdd_device
+        spec = vim.vm.ConfigSpec()
+        spec.deviceChange = [virtual_hdd_spec]
+        task = vm.ReconfigVM_Task(spec=spec)
+
+        result = WaitTask(task, 'VM clone task')
+        return result
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def get_vm_VirtualNetworkAdapter_infos(vm):
     adaptaters = []
@@ -1514,5 +1676,46 @@ def delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd,
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
-    
-    
+
+
+def generate_html5_console(host, user, pwd, port, vm_mor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vm_mor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        result=[]
+
+        content = service_instance.RetrieveContent()
+        vm_obj = get_obj(content, [vim.VirtualMachine], vm_mor)
+        vcenter_data = content.setting
+        vcenter_settings = vcenter_data.setting
+        console_port = '7331'
+
+        for item in vcenter_settings:
+            key = getattr(item, 'key')
+            if key == 'VirtualCenter.FQDN':
+                vcenter_fqdn = getattr(item, 'value')
+        session_manager = content.sessionManager
+        session = session_manager.AcquireCloneTicket()
+        import OpenSSL
+        vc_cert = ssl.get_server_certificate([host,str(port)])
+        vc_pem = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, vc_cert)
+        vc_fingerprint = vc_pem.digest('sha1')
+        result = "https://" + host + ":" + console_port + "/console/?vmId="+ str(vm_mor) + "&vmName=" + vm_obj.name + "&host=" + vcenter_fqdn+"&sessionTicket=" + session + "&thumbprint=" + vc_fingerprint
+        return result
+
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result

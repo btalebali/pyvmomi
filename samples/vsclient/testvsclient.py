@@ -124,10 +124,10 @@ port=443
 
 
 
-dVSmor="dvs-3083"
-dv_port_name="vlan20"
-result = delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port,dVSmor,dv_port_name)
-
+# dVSmor="dvs-3083"
+# dv_port_name="vlan20"
+# result = delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port,dVSmor,dv_port_name)
+#
 
 #
 # ######### Folders
@@ -166,9 +166,25 @@ result = delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user,
 # disk_number=0
 # vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
 # print vm_new_vm
+# vm_mor = "vm-5930"
+#  list disk in vm
+# disks = get_vm_disks(host, user, pwd, port, vm_mor)
+# print disks
 
+# create disk in vm_mor
+# vm_mor = "vm-5930"
+# disk_size_in_gb = 1
+# result = add_disk_in_vm(host, user, pwd, port, vm_mor, disk_size_in_gb)
+# print result
+
+# delete disque in vm_mor
+# vm_mor = "vm-5930"
+# unit_number=2
+# result = delete_disk_in_vm(host, user, pwd, port, vm_mor, unit_number)
+# print result
 
 """
+
 vm_mor = "vm-5930" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 print result
@@ -188,22 +204,21 @@ portgroup_or_vs_mor3= "network-540"
 
 result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
 print result
-result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
-print result
-result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor3)
-print result
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
+# print result
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor3)
+# print result
 
 # vm_mor = "vm-5850"
 
 #nic config in order
-nic_config=[{'isDHCP' : True},
+nic_config=[
             {'isDHCP': False,
              'vm_ip': '10.10.10.3',
              'subnet': '255.255.255.0',
              'gateway': '10.10.10.1',
              'dns': ['8.8.8.8', '8.8.4.4'],
-             },
-            {'isDHCP' : True},
+             }
             ]
 hostname = "vm1"
 domaine = "prologue.prl"
@@ -222,7 +237,7 @@ print result
 
 
 
-timeout_in_mn=10   # 15 for windows os
+timeout_in_mn=15   # 15 for windows os
 result = wait_for_tools(host, user, pwd, port, vm_mor, timeout_in_mn)
 print result
 
@@ -231,6 +246,11 @@ print result
 virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
 """
+
+# vm_mor = "vm-5641"
+# link = generate_html5_console(host, user, pwd, port, vm_mor)
+# print link
+
 
 ### Snapshot
 # vm_mor="vm-5906"
@@ -259,3 +279,5 @@ print virtualmachine_infos
 # vm_mor="vm-5906"
 # snapshot_name="1641"
 # result = delete_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
+
+

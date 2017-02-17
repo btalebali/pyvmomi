@@ -99,8 +99,7 @@ def main():
     session = session_manager.AcquireCloneTicket()
 
     vc_cert = ssl.get_server_certificate((args.host, int(args.port)))
-    vc_pem = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                             vc_cert)
+    vc_pem = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,vc_cert)
     vc_fingerprint = vc_pem.digest('sha1')
 
     print "Open the following URL in your browser to access the " \
