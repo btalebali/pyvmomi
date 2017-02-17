@@ -34,9 +34,9 @@ port=443
 # vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
 # print vdc_info
 
-# clustermor="domain-c532"
-# cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
-# print cluster_info
+clustermor="domain-c532"
+cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
+print cluster_info
 
 
 
@@ -247,9 +247,9 @@ virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
 """
 
-vm_mor = "vm-5641"
-link = generate_html5_console(host, user, pwd, port, vm_mor)
-print link
+# vm_mor = "vm-5641"
+# link = generate_html5_console(host, user, pwd, port, vm_mor)
+# print link
 
 
 ### Snapshot

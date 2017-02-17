@@ -171,6 +171,8 @@ def get_cluster_info(host,user,pwd,port, clustermor):
                 result['hosts'] = a
                 result['totalCPU'] = obj.summary.totalCpu
                 result['totalRAM'] = obj.summary.totalMemory
+                result['name'] = obj.name
+                result['moId'] = obj._moId
 
         object_view.Destroy()
 
