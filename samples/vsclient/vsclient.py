@@ -1443,3 +1443,76 @@ def delete_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+
+
+def create_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port, dVSmor,dv_port_name, vlan_id):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param dVSmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder, [vim.VmwareDistributedVirtualSwitch],True)
+        result = []
+        for dvs in object_view.view:
+            if dvs._moId == dVSmor:
+                dv_pg_spec = vim.dvs.DistributedVirtualPortgroup.ConfigSpec()
+                dv_pg_spec.name = dv_port_name
+                dv_pg_spec.numPorts = 32
+                dv_pg_spec.type = vim.dvs.DistributedVirtualPortgroup.PortgroupType.earlyBinding
+                dv_pg_spec.defaultPortConfig = vim.dvs.VmwareDistributedVirtualSwitch.VmwarePortConfigPolicy()
+                dv_pg_spec.defaultPortConfig.securityPolicy = vim.dvs.VmwareDistributedVirtualSwitch.SecurityPolicy()
+                a=vim.dvs.VmwareDistributedVirtualSwitch
+                dv_pg_spec.defaultPortConfig.vlan = vim.dvs.VmwareDistributedVirtualSwitch.VlanIdSpec()#TrunkVlanSpec()
+                dv_pg_spec.defaultPortConfig.vlan.vlanId = int(vlan_id)
+                dv_pg_spec.defaultPortConfig.securityPolicy.allowPromiscuous = vim.BoolPolicy(value=True)
+                dv_pg_spec.defaultPortConfig.securityPolicy.forgedTransmits = vim.BoolPolicy(value=True)
+                dv_pg_spec.defaultPortConfig.vlan.inherited = False
+                dv_pg_spec.defaultPortConfig.securityPolicy.macChanges = vim.BoolPolicy(value=False)
+                dv_pg_spec.defaultPortConfig.securityPolicy.inherited = False
+                task = dvs.AddDVPortgroup_Task([dv_pg_spec])
+                result = WaitTask(task)
+        object_view.Destroy()
+        return json.dumps(result, sort_keys=True)
+    except vmodl.MethodFault as e:
+        result = "Caught vmodl fault : {}".format(e.msg)
+        return result
+
+
+def delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port,dVSmor,dv_port_name):
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        dvs = get_obj(content, [vim.VmwareDistributedVirtualSwitch], dVSmor)
+        r=[]
+        spec1=vim.dvs.DistributedVirtualPort.ConfigSpec()
+        print spec1
+        spec1.operation = "remove"
+        spec1.name = dv_port_name
+        print dv_port_name
+        spec1.setting = vim.dvs.DistributedVirtualPort.Setting()
+        task = dvs.ReconfigureDVPort_Task(port = [spec1])
+        r = WaitTask(task)
+        return r
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
+    
+    

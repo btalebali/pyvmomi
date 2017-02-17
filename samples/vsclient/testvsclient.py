@@ -30,9 +30,9 @@ port=443
 #
 #
 
-vDCmor="datacenter-527"
-vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
-print vdc_info
+# vDCmor="datacenter-527"
+# vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
+# print vdc_info
 
 # clustermor="domain-c532"
 # cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
@@ -114,12 +114,19 @@ print vdc_info
 # dVSmor="dvs-3083"
 # distributed_virtual_portgroups = list_distributed_virtual_portgroups_in_vDC(host, user, pwd, port, dVSmor)
 # print distributed_virtual_portgroups
-#
-#
-# result = create_distributed_virtual_portgroups_in_distributed_vswitch()
-# print result
-#
 
+# dVSmor="dvs-3083"
+# dv_port_name="vlan20"
+# vlan_id = 20
+# result = create_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port,dVSmor,dv_port_name,vlan_id)
+# print result
+
+
+
+
+dVSmor="dvs-3083"
+dv_port_name="vlan20"
+result = delete_distributed_virtual_portgroup_in_distributed_vswitch(host, user, pwd, port,dVSmor,dv_port_name)
 
 
 #
@@ -160,9 +167,9 @@ print vdc_info
 # vm_new_vm = update_capacity_virtualdisk(host, user, pwd, port, vm_mor, new_capacity_virtualdisk_in_gb, disk_number)
 # print vm_new_vm
 
-"""
 
-vm_mor = "vm-5897" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+"""
+vm_mor = "vm-5930" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 print result
 
@@ -223,8 +230,8 @@ print result
 
 virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
-
 """
+
 ### Snapshot
 # vm_mor="vm-5906"
 # result = get_snapshots_in_vm(host, user, pwd, port, vm_mor)
