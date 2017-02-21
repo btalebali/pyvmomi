@@ -166,13 +166,26 @@ def get_cluster_info(host,user,pwd,port, clustermor):
                     net.append(info)
                 result['network'] = net
                 a = []
+                overallCpuUsage=0
+                overallMemoryUsage=0
+                limitMemory=0
+                limitCpu=0
                 for host in obj.host:
+                    overallCpuUsage = overallCpuUsage+host.summary.quickStats.overallCpuUsage
+                    overallMemoryUsage = overallMemoryUsage+ host.summary.quickStats.overallMemoryUsage
+                    limitMemory = limitMemory+ host.systemResources.config.memoryAllocation.limit
+                    limitCpu = limitCpu+ host.systemResources.config.cpuAllocation.limit
                     a.append(host.name)
                 result['hosts'] = a
-                result['totalCPU'] = obj.summary.totalCpu
-                result['totalRAM'] = obj.summary.totalMemory
+                # result['totalCPU'] = obj.summary.totalCpu
+                # result['totalRAM'] = obj.summary.totalMemory
                 result['name'] = obj.name
                 result['moId'] = obj._moId
+                result['numHosts']=obj.summary.numHosts
+                result['overallCpuUsage'] = overallCpuUsage
+                result['overallMemoryUsage'] = overallMemoryUsage
+                result['limitMemory'] =limitMemory
+                result['limitCpu'] =limitCpu
 
         object_view.Destroy()
 
@@ -182,6 +195,78 @@ def get_cluster_info(host,user,pwd,port, clustermor):
         return result
 
 
+
+
+
+
+
+
+def get_host_info(host,user,pwd,port, clustermor):
+    """
+    :param host:
+    :param user:
+    :param pwd:
+    :param port:
+    :param vDCmor:
+    :return:
+    """
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.verify_mode = ssl.CERT_NONE
+        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+        if not service_instance:
+            result = "Could not connect to the specified host using specified username and password"
+            return result
+        atexit.register(connect.Disconnect, service_instance)
+        content = service_instance.RetrieveContent()
+        object_view = content.viewManager.CreateContainerView(content.rootFolder,[vim.HostSystem], True)
+        result={}
+        for obj in object_view.view:
+            if obj._moId == clustermor:
+                a=[]
+                for datastore in obj.datastore:
+                    info={"name":datastore.name,
+                           "moId": datastore._moId,
+                           "capacity":datastore.summary.capacity
+                           }
+                    a.append(info)
+                result['datastore']=a
+                net = []
+                for network in obj.network:
+                    info={"name":network.name,
+                           "moId": network._moId,
+                          }
+                    net.append(info)
+                result['network'] = net
+                a = []
+                vms=obj.vm
+                for vm in vms:
+                    info={"name":vm.name,
+                           "moId": vm._moId}
+                    a.append(info)
+                result['vm'] = a
+
+                a=[]
+                HostHardwareSummary={'cpuMhz': obj.summary.hardware.cpuMhz,
+                                     'cpuModel' : obj.summary.hardware.cpuModel,
+                                     'model' : obj.summary.hardware.model,
+                                    'numCpuCores' : obj.summary.hardware.numCpuCores,
+                                    'numNics' : obj.summary.hardware.numNics,
+                                    'vendor' : obj.summary.hardware.vendor
+                                     }
+                a.append(HostHardwareSummary)
+                result['HostHardwareSummary'] = HostHardwareSummary
+                result['powerState'] = obj.summary.runtime.powerState
+                result['connectionState'] = obj.summary.runtime.connectionState
+                result['overallCpuUsage'] = obj.summary.quickStats.overallCpuUsage
+                result['overallMemoryUsage'] = obj.summary.quickStats.overallMemoryUsage
+                result['limitMemory'] = obj.systemResources.config.memoryAllocation.limit
+                result['limitCpu'] =obj.systemResources.config.cpuAllocation.limit
+        object_view.Destroy()
+        return json.dumps(result,sort_keys=True)
+    except vmodl.MethodFault as e:
+        result="Caught vmodl fault : {}".format(e.msg)
+        return result
 
 
 
@@ -1721,3 +1806,4 @@ def generate_html5_console(host, user, pwd, port, vm_mor):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+

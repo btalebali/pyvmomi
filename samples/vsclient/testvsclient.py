@@ -39,6 +39,12 @@ cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
 print cluster_info
 
 
+# host_mor="host-537"
+# host_info = get_host_info(host,user,pwd,port, host_mor)
+# print host_info
+
+
+
 
 # clustermor="domain-c532"
 # ressourcepools = list_RessourcesPool_and_VM_in_cluster(host, user, pwd, port, clustermor)
@@ -264,20 +270,25 @@ print virtualmachine_infos
 # result = create_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
 # print result
 #
-#
+
+
+
+
 # vm_mor="vm-5906"
 # snapshot_name="1000"
 # result = create_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
 
 
-#
+
 # vm_mor="vm-5906"
 # snapshot_name="1645"
 # result = revert_to_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
 
 
+
 # vm_mor="vm-5906"
 # snapshot_name="1641"
 # result = delete_snapshot_in_vm(host, user ,pwd , port ,vm_mor ,snapshot_name)
+
 
 
