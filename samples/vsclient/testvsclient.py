@@ -34,9 +34,9 @@ port=443
 # vdc_info = get_vdc_info(host,user,pwd,port, vDCmor)
 # print vdc_info
 
-clustermor="domain-c532"
-cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
-print cluster_info
+# clustermor="domain-c532"
+# cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
+# print cluster_info
 
 
 # host_mor="host-537"
@@ -66,7 +66,6 @@ print cluster_info
 # "ubuntu-server-12.4-64lts": "vm-3699", "ubuntu12.04 64 bits 2nic dhcp": "vm-5737", "ubuntu12.04-VMware-tools-64bits-eth0static": "vm-1674"}
 
 
-#
 #
 #
 # ####### resourcepool
@@ -189,9 +188,9 @@ print cluster_info
 # result = delete_disk_in_vm(host, user, pwd, port, vm_mor, unit_number)
 # print result
 
-"""
 
-vm_mor = "vm-5930" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+vm_mor = "vm-5985" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 print result
 
@@ -203,15 +202,15 @@ print result
 
 
 # vm_mor = "vm-5857"
-portgroup_or_vs_mor1 = "dvportgroup-5733"           #vlan1 dhcp
-portgroup_or_vs_mor2 = "dvportgroup-5746"           #"network-540" #
-portgroup_or_vs_mor3= "network-540"
+portgroup_or_vs_mor1 = "dvportgroup-5733"       #vlan1 dhcp
+portgroup_or_vs_mor2 = "dvportgroup-5746"
+portgroup_or_vs_mor3 = "network-540"            #"network-540"
 
 
 result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
 print result
-# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
-# print result
+result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
+print result
 # result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor3)
 # print result
 
@@ -220,15 +219,21 @@ print result
 #nic config in order
 nic_config=[
             {'isDHCP': False,
-             'vm_ip': '10.10.10.3',
+             'vm_ip': '10.10.10.2',
+             'subnet': '255.255.255.0',
+             'gateway': '10.10.10.1',
+             'dns': ['8.8.8.8', '8.8.4.4'],
+             },
+            {'isDHCP': False,
+             'vm_ip': '10.10.0.2',
              'subnet': '255.255.255.0',
              'gateway': '10.10.10.1',
              'dns': ['8.8.8.8', '8.8.4.4'],
              }
             ]
-hostname = "vm1"
+hostname = "bechir4"
 domaine = "prologue.prl"
-adminpassword= "" # Only for windows
+adminpassword = "Pr0l0gue:2018" # Only for windows
 
 
 result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, adminpassword)
@@ -242,16 +247,14 @@ print result
 
 
 
-
-timeout_in_mn=15   # 15 for windows os
-result = wait_for_tools(host, user, pwd, port, vm_mor, timeout_in_mn)
+timeout_in_mn=25   # 15 for windows os
+result = wait_for_customization(host, user, pwd, port, vm_mor, hostname, timeout_in_mn)
 print result
-
 
 
 virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
 print virtualmachine_infos
-"""
+
 
 # vm_mor = "vm-5641"
 # link = generate_html5_console(host, user, pwd, port, vm_mor)
@@ -292,3 +295,7 @@ print virtualmachine_infos
 
 
 
+
+# Monitoring Graph
+
+# result = function(host, user, pwd, port)
