@@ -636,6 +636,9 @@ def get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor):
                 result["hostName"]=vm.summary.guest.hostName
                 result["ipAddress"]=vm.summary.guest.ipAddress
                 result["tools"] = tools
+                result['overallCpuUsage'] = vm.summary.quickStats.overallCpuUsage
+                result['hostMemoryUsage'] = vm.summary.quickStats.hostMemoryUsage
+                result['UptimeSeconds'] = vm.summary.quickStats.uptimeSeconds
 
         object_view.Destroy()
         return json.dumps(result,sort_keys=True)
@@ -1854,7 +1857,6 @@ def function(host, user, pwd, port):
             counter_full = "{}.{}.{}".format(counter.groupInfo.key, counter.nameInfo.key, counter.rollupType)
             perf_dict[counter_full] = counter.key
 
-
         viewType = [vim.VirtualMachine]
         props = ['name','runtime.powerState', 'datastore']
         specType = vim.VirtualMachine
@@ -1865,9 +1867,6 @@ def function(host, user, pwd, port):
         pfSpec = vim.PropertyCollector.FilterSpec(objectSet=[oSpec], propSet=[pSpec], reportMissingObjectsInResults=False)
         vm_properties = content.propertyCollector.RetrieveProperties(specSet=[pfSpec])
         objView.Destroy()
-
-        print vm_properties
-        exit()
 
         for vm_property in vm_properties:  # loop through the list built from vcenter and build dictonaries.
             property_dic = {}
@@ -1883,48 +1882,49 @@ def function(host, user, pwd, port):
                     perfManager = content.perfManager
                     counterId = perf_dict[counter_name]
                     metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                    query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime = start_time, endTime = end_time)
+                    query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId=[metricId], startTime = start_time, endTime = end_time)
                     statDatastoreIoRead = perfManager.QueryPerf(querySpec=[query])
-                    DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value))/Decimal(3.0))# dividing by 3 to get the closest to real time value as possible
+                    DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
                     iopsr = DatastoreIoRead
-
                     counter_name = 'datastore.numberWriteAveraged.average'
                     perfManager = content.perfManager
                     counterId = perf_dict[counter_name]
                     metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                    query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime=start_time, endTime=end_time)
+                    query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId = [metricId], startTime = start_time, endTime = end_time)
                     statDatastoreIoWrite = perfManager.QueryPerf(querySpec=[query])
-                    DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value))/Decimal(3.0))  # dividing by 3 to get the closest to real time value as possible
+                    DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
                     iopsw = DatastoreIoWrite
 
                     '''
                     Check the vm_mor from Vcenter which is set in the getProperties function to see if
                     exist in the VMS dictonary that was built from the oracle database.
                     '''
-                    if vm_mor in vms:
-                        vm_id = vms[vm_mor]
-                        for datastore_vm in property_dic['datastore']:
-                            datastore_mor = str(datastore_vm).split(':')[1][:-1]
-                            if datastore_mor in datastores_db:
-                                datastore_id = datastores_db[datastore_mor]
-                                pg_cursor.execute("""insert into storage_perf_samples
-                                                            (datetime,
-                                                            vcenter_id,
-                                                            vm_id,
-                                                            datastore_id,
-                                                            read,
-                                                            write)
-                                                     values (%s,
-                                                            %s,
-                                                            %s,
-                                                            %s,
-                                                            %s,
-                                                            %s) """,
-                                                            (rundate, vcenter_id, vm_id, datastore_id, iopsr, iopsw))
-                            else:
-                                print("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
-                    else:
-                        print("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
+
+                    # if vm_mor in vms:
+                    #     vm_id = vms[vm_mor]
+                    #     for datastore_vm in property_dic['datastore']:
+                    #         datastore_mor = str(datastore_vm).split(':')[1][:-1]
+                    #         if datastore_mor in datastores_db:
+                    #             datastore_id = datastores_db[datastore_mor]
+                    #             pg_cursor.execute("""insert into storage_perf_samples
+                    #                                         (datetime,
+                    #                                         vcenter_id,
+                    #                                         vm_id,
+                    #                                         datastore_id,
+                    #                                         read,
+                    #                                         write)
+                    #                                  values (%s,
+                    #                                         %s,
+                    #                                         %s,
+                    #                                         %s,
+                    #                                         %s,
+                    #                                         %s) """,
+                    #                                         (rundate, vcenter_id, vm_id, datastore_id, iopsr, iopsw))
+                    #         else:
+                    #             print("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
+                    # else:
+                    #     print("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
+
                 except:
                       pass
 

@@ -97,9 +97,9 @@ port=443
 #
 # ###### VirtualMachine
 #
-# virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
-# virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor)
-# print virtualmachine_infos
+virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
+virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor)
+print virtualmachine_infos
 #
 #
 # ######## NETWORK
@@ -188,7 +188,7 @@ port=443
 # result = delete_disk_in_vm(host, user, pwd, port, vm_mor, unit_number)
 # print result
 
-
+"""
 vm_mor = "vm-5985" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 
 result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
@@ -260,6 +260,7 @@ print virtualmachine_infos
 # link = generate_html5_console(host, user, pwd, port, vm_mor)
 # print link
 
+"""
 
 ### Snapshot
 # vm_mor="vm-5906"
@@ -299,3 +300,4 @@ print virtualmachine_infos
 # Monitoring Graph
 
 # result = function(host, user, pwd, port)
+# print result
