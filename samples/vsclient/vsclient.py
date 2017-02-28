@@ -8,6 +8,8 @@ from pyVmomi import vim
 import json
 import time
 
+from datetime import timedelta, datetime
+
 from decimal import Decimal
 
 #from samples.tools import cli
@@ -638,6 +640,7 @@ def get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor):
                 result["tools"] = tools
                 result['overallCpuUsage'] = vm.summary.quickStats.overallCpuUsage
                 result['hostMemoryUsage'] = vm.summary.quickStats.hostMemoryUsage
+                result['committedStorage'] = str(int(vm.summary.storage.committed) / 1024 / 1024 / 1024)
                 result['UptimeSeconds'] = vm.summary.quickStats.uptimeSeconds
 
         object_view.Destroy()
@@ -645,6 +648,16 @@ def get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor):
     except vmodl.MethodFault as e:
         result="Caught vmodl fault : {}".format(e.msg)
         return result
+
+
+
+
+
+
+
+
+
+
 
 
 def get_vm_virtualDisk_infos(vm):
