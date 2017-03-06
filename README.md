@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/vmware/pyvmomi-community-samples.svg?branch=master)](https://travis-ci.org/vmware/pyvmomi-community-samples) 
 
-pyvmomi-community-samples
+pyvmomi-samples
 =========================
 
 > Community contributed samples for the pyVmomi library.

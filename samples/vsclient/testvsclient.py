@@ -6,10 +6,10 @@
 from samples.vsclient.vsclient import *
 import time,json
 
-host= "172.17.117.104"
-user= "administrateur"
-pwd="Pr0l0gue2014"
-port=443
+host = "xxxxxx"
+user = "xxxxx"
+pwd = "xxxxx"
+port = 443
 
 ######################################################
 ######### Unit tests #################################
@@ -37,7 +37,6 @@ port=443
 # clustermor="domain-c532"
 # cluster_info = get_cluster_info(host,user,pwd,port, clustermor)
 # print cluster_info
-
 
 # host_mor="host-537"
 # host_info = get_host_info(host,user,pwd,port, host_mor)
@@ -96,10 +95,10 @@ port=443
 #
 #
 # ###### VirtualMachine
-#
-virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
-virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor)
-print virtualmachine_infos
+# #
+# virtualmachine_mor = "vm-5641" #"vm-5796" #"vm-5736"#"vm-5520"#"vm-5781" #
+# virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor)
+# print virtualmachine_infos
 #
 #
 # ######## NETWORK
@@ -188,11 +187,11 @@ print virtualmachine_infos
 # result = delete_disk_in_vm(host, user, pwd, port, vm_mor, unit_number)
 # print result
 
-"""
-vm_mor = "vm-5985" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 
-result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
-print result
+vm_mor = "vm-5973" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+
+# result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
+# print result
 
 
 
@@ -202,65 +201,63 @@ print result
 
 
 # vm_mor = "vm-5857"
-portgroup_or_vs_mor1 = "dvportgroup-5733"       #vlan1 dhcp
-portgroup_or_vs_mor2 = "dvportgroup-5746"
-portgroup_or_vs_mor3 = "network-540"            #"network-540"
+# portgroup_or_vs_mor1 = "network-540"       #vlan1 dhcp
+portgroup_or_vs_mor2 = "dvportgroup-5746"  #
 
 
-result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
-print result
-result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
-print result
+
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor1)
+# print result
+
+# result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor2)
+# print result
+
 # result = add_nic_to_vm_and_connect_to_net(host, user, pwd, port, vm_mor, portgroup_or_vs_mor3)
 # print result
 
 # vm_mor = "vm-5850"
 
-#nic config in order
-nic_config=[
-            {'isDHCP': False,
-             'vm_ip': '10.10.10.2',
-             'subnet': '255.255.255.0',
-             'gateway': '10.10.10.1',
-             'dns': ['8.8.8.8', '8.8.4.4'],
-             },
-            {'isDHCP': False,
-             'vm_ip': '10.10.0.2',
-             'subnet': '255.255.255.0',
-             'gateway': '10.10.10.1',
-             'dns': ['8.8.8.8', '8.8.4.4'],
-             }
-            ]
-hostname = "bechir4"
-domaine = "prologue.prl"
-adminpassword = "Pr0l0gue:2018" # Only for windows
-
-
-result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, adminpassword)
-print result
+# #nic config in order
+# nic_config=[
+#             {'isDHCP': True
+#              },
+#             {'isDHCP': False,
+#              'vm_ip': '10.10.0.2',
+#              'subnet': '255.255.255.0',
+#              'gateway': '10.10.10.1',
+#              'dns': ['8.8.8.8', '8.8.4.4'],
+#              }
+#             ]
+# hostname = "hostname"
+# domaine = "domain.domain"
+# adminpassword = "Pr0l0gue:2018" # Only for windows
+#
+#
+# result = customize_nics_in_vm(host, user, pwd, port, vm_mor, nic_config, hostname, domaine, adminpassword)
+# print result
 
 
 
 ##Actions on VM
-result = poweron_vm(host, user, pwd, port, vm_mor)
-print result
+# result = poweron_vm(host, user, pwd, port, vm_mor)
+# print result
 
 
 
-timeout_in_mn=25   # 15 for windows os
-result = wait_for_customization(host, user, pwd, port, vm_mor, hostname, timeout_in_mn)
-print result
+# timeout_in_mn=25   # 15 for windows os
+# result = wait_for_customization(host, user, pwd, port, vm_mor, hostname, timeout_in_mn)
+# print result
 
 
-virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
-print virtualmachine_infos
+# virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
+# print virtualmachine_infos
 
 
 # vm_mor = "vm-5641"
 # link = generate_html5_console(host, user, pwd, port, vm_mor)
 # print link
 
-"""
+
 
 ### Snapshot
 # vm_mor="vm-5906"
