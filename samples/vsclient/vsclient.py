@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 
 import atexit
 import ssl
@@ -7,6 +9,10 @@ from pyVmomi import vmodl
 from pyVmomi import vim
 import json
 import time
+import pypacksrc
+import os
+import uuid
+
 
 from datetime import timedelta, datetime
 
@@ -619,9 +625,13 @@ def get_virtualmachine_info(host, user, pwd, port, virtualmachine_mor):
         for vm in object_view.view:
             if vm._moId == virtualmachine_mor:
                 tools = {
-                    "toolsVersion": vm.config.tools.toolsVersion,
+                    "toolsVersion": vm.guest.toolsVersion,
                     "toolsStatus": str(vm.summary.guest.toolsStatus),
-                    "toolsRunningStatus": str(vm.summary.guest.toolsRunningStatus)
+                    "toolsRunningStatus": str(vm.summary.guest.toolsRunningStatus),
+                    "guestOperationsReady": str(vm.guest.guestOperationsReady),
+                    "guestState": str(vm.guest.guestState),
+                    "hostName": str(vm.guest.hostName),
+                    "interactiveGuestOperationsReady": str(vm.guest.interactiveGuestOperationsReady),
                 }
                 result["name"]=vm.name
                 result["moId"] = str(vm._moId)
@@ -1099,8 +1109,7 @@ def clone_object2(host, user, pwd, port, vm_name, template_or_vm_mor, datastore_
                    'subnet_mask': '255.255.255.0',
                    'gateway': '10.10.10.1',
                    'dns': ['8.8.8.8', '8.8.4.4'],
-                   'domain': 'prologue.prl'
-                       }]
+                   'domain': 'prologue.prl'                    }]
         # create a Network device for each static IP
         for key, ip in enumerate(ip_settings):
             # VM device
@@ -1856,186 +1865,380 @@ def generate_html5_console(host, user, pwd, port, vm_mor):
 
 
 
-def function(host, user, pwd, port):
-    try:
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        context.verify_mode = ssl.CERT_NONE
-        service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
-        content = service_instance.RetrieveContent()
+# def function(host, user, pwd, port):
+#     try:
+#         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+#         context.verify_mode = ssl.CERT_NONE
+#         service_instance = connect.SmartConnect(host=host,user=user,pwd=pwd,port=port,sslContext=context)
+#         content = service_instance.RetrieveContent()
+#
+#         perf_dict = {}
+#         perfList = content.perfManager.perfCounter
+#
+#         for counter in perfList:  # build the vcenter counters for the objects
+#             counter_full = "{}.{}.{}".format(counter.groupInfo.key, counter.nameInfo.key, counter.rollupType)
+#             perf_dict[counter_full] = counter.key
+#
+#         viewType = [vim.VirtualMachine]
+#         props = ['name','runtime.powerState', 'datastore']
+#         specType = vim.VirtualMachine
+#         objView = content.viewManager.CreateContainerView(content.rootFolder,viewType,True)
+#         tSpec = vim.PropertyCollector.TraversalSpec(name='tSpecName', path='view', skip=False, type=vim.view.ContainerView)
+#         pSpec = vim.PropertyCollector.PropertySpec(all=False, pathSet=props,type=specType)
+#         oSpec = vim.PropertyCollector.ObjectSpec(obj=objView,selectSet=[tSpec],skip=False)
+#         pfSpec = vim.PropertyCollector.FilterSpec(objectSet=[oSpec], propSet=[pSpec], reportMissingObjectsInResults=False)
+#         vm_properties = content.propertyCollector.RetrieveProperties(specSet=[pfSpec])
+#         objView.Destroy()
+#
+#         for vm_property in vm_properties:  # loop through the list built from vcenter and build dictonaries.
+#             property_dic = {}
+#             for prop in vm_property.propSet:
+#                 property_dic[prop.name] = prop.val
+#
+#             vm = vm_property.obj
+#             vm_mor = vm._moId
+#             if "poweredOn" in vm.runtime.powerState:
+#                 try:
+#                     # Get Values of IOPS which are 20 second averages more accurate you can get
+#                     counter_name = 'datastore.numberReadAveraged.average'
+#                     perfManager = content.perfManager
+#                     counterId = perf_dict[counter_name]
+#                     metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
+#                     query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId=[metricId], startTime = start_time, endTime = end_time)
+#                     statDatastoreIoRead = perfManager.QueryPerf(querySpec=[query])
+#                     DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
+#                     iopsr = DatastoreIoRead
+#                     counter_name = 'datastore.numberWriteAveraged.average'
+#                     perfManager = content.perfManager
+#                     counterId = perf_dict[counter_name]
+#                     metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
+#                     query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId = [metricId], startTime = start_time, endTime = end_time)
+#                     statDatastoreIoWrite = perfManager.QueryPerf(querySpec=[query])
+#                     DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
+#                     iopsw = DatastoreIoWrite
+#
+#                     '''
+#                     Check the vm_mor from Vcenter which is set in the getProperties function to see if
+#                     exist in the VMS dictonary that was built from the oracle database.
+#                     '''
+#
+#                     # if vm_mor in vms:
+#                     #     vm_id = vms[vm_mor]
+#                     #     for datastore_vm in property_dic['datastore']:
+#                     #         datastore_mor = str(datastore_vm).split(':')[1][:-1]
+#                     #         if datastore_mor in datastores_db:
+#                     #             datastore_id = datastores_db[datastore_mor]
+#                     #             pg_cursor.execute("""insert into storage_perf_samples
+#                     #                                         (datetime,
+#                     #                                         vcenter_id,
+#                     #                                         vm_id,
+#                     #                                         datastore_id,
+#                     #                                         read,
+#                     #                                         write)
+#                     #                                  values (%s,
+#                     #                                         %s,
+#                     #                                         %s,
+#                     #                                         %s,
+#                     #                                         %s,
+#                     #                                         %s) """,
+#                     #                                         (rundate, vcenter_id, vm_id, datastore_id, iopsr, iopsw))
+#                     #         else:
+#                     #             print("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
+#                     # else:
+#                     #     print("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
+#
+#                 except:
+#                       pass
+#
+#     except vmodl.MethodFault as e:
+#         result = "Caught vmodl fault : {}".format(e.msg)
+#         return result
 
-        perf_dict = {}
-        perfList = content.perfManager.perfCounter
 
-        for counter in perfList:  # build the vcenter counters for the objects
-            counter_full = "{}.{}.{}".format(counter.groupInfo.key, counter.nameInfo.key, counter.rollupType)
-            perf_dict[counter_full] = counter.key
 
-        viewType = [vim.VirtualMachine]
-        props = ['name','runtime.powerState', 'datastore']
-        specType = vim.VirtualMachine
-        objView = content.viewManager.CreateContainerView(content.rootFolder,viewType,True)
-        tSpec = vim.PropertyCollector.TraversalSpec(name='tSpecName', path='view', skip=False, type=vim.view.ContainerView)
-        pSpec = vim.PropertyCollector.PropertySpec(all=False, pathSet=props,type=specType)
-        oSpec = vim.PropertyCollector.ObjectSpec(obj=objView,selectSet=[tSpec],skip=False)
-        pfSpec = vim.PropertyCollector.FilterSpec(objectSet=[oSpec], propSet=[pSpec], reportMissingObjectsInResults=False)
-        vm_properties = content.propertyCollector.RetrieveProperties(specSet=[pfSpec])
-        objView.Destroy()
+    # """
+    # atexit.register(Disconnect, vcenter_connection)
+    #      content = vcenter_connection.RetrieveContent()
+    #      perf_dict = {}
+    #      perfList = content.perfManager.perfCounter
+    #
+    #      for counter in perfList: #build the vcenter counters for the objects
+    #         counter_full = "{}.{}.{}".format(counter.groupInfo.key,counter.nameInfo.key,counter.rollupType)
+    #         perf_dict[counter_full] = counter.key
+    #
+    #      viewType = [vim.VirtualMachine]
+    #      props = ['name','runtime.powerState', 'datastore']
+    #      specType = vim.VirtualMachine
+    #      objView = content.viewManager.CreateContainerView(content.rootFolder,viewType,True)
+    #      tSpec = vim.PropertyCollector.TraversalSpec(name='tSpecName', path='view', skip=False, type=vim.view.ContainerView)
+    #      pSpec = vim.PropertyCollector.PropertySpec(all=False, pathSet=props,type=specType)
+    #      oSpec = vim.PropertyCollector.ObjectSpec(obj=objView,selectSet=[tSpec],skip=False)
+    #      pfSpec = vim.PropertyCollector.FilterSpec(objectSet=[oSpec], propSet=[pSpec], reportMissingObjectsInResults=False)
+    #      vm_properties = content.propertyCollector.RetrieveProperties(specSet=[pfSpec])
+    #      objView.Destroy()
+    #
+    #      for vm_property in vm_properties: #loop through the list built from vcenter and build dictonaries.
+    #         property_dic = {}
+    #         for prop in vm_property.propSet:
+    #            property_dic[prop.name] = prop.val
+    #
+    #         vm = vm_property.obj
+    #         vm_mor = vm._moId
+    #         if "poweredOn" in vm.runtime.powerState:
+    #            try:
+    #               #Get Values of IOPS which are 20 second averages more accurate you can get
+    #               counter_name = 'datastore.numberReadAveraged.average'
+    #               perfManager = content.perfManager
+    #               counterId = perf_dict[counter_name]
+    #               metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
+    #               query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime=start_time, endTime=end_time)
+    #               statDatastoreIoRead = perfManager.QueryPerf(querySpec=[query])
+    #               DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value)) / Decimal(3.0)) #dividing by 3 to get the closest to real time value as possible
+    #               iopsr = DatastoreIoRead
+    #
+    #               counter_name = 'datastore.numberWriteAveraged.average'
+    #               perfManager = content.perfManager
+    #               counterId = perf_dict[counter_name]
+    #               metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
+    #               query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime=start_time, endTime=end_time)
+    #               statDatastoreIoWrite = perfManager.QueryPerf(querySpec=[query])
+    #               DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value)) / Decimal(3.0)) #dividing by 3 to get the closest to real time value as possible
+    #               iopsw = DatastoreIoWrite
+    #
+    #               '''
+    #               Check the vm_mor from Vcenter which is set in the getProperties function to see if
+    #               exist in the VMS dictonary that was built from the oracle database.
+    #               '''
+    #               if vm_mor in vms:
+    #                  vm_id = vms[vm_mor]
+    #                  for datastore_vm in property_dic['datastore']:
+    #                     datastore_mor = str(datastore_vm).split(':')[1][:-1]
+    #                     if datastore_mor in datastores_db:
+    #                        datastore_id = datastores_db[datastore_mor]
+    #                        pg_cursor.execute(\"""insert into storage_perf_samples
+    #                                                          (datetime,
+    #                                                          vcenter_id,
+    #                                                          vm_id,
+    #                                                          datastore_id,
+    #                                                          read,
+    #                                                          write)
+    #                                                   values (%s,
+    #                                                          %s,
+    #                                                          %s,
+    #                                                          %s,
+    #                                                          %s,
+    #                                                          %s) \""",
+    #                                                          (rundate,
+    #                                                          vcenter_id,
+    #                                                          vm_id,
+    #                                                          datastore_id,
+    #                                                          iopsr,
+    #                                                          iopsw))
+    #
+    #                     else:
+    #                        logging.warning("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
+    #               else:
+    #                  logging.warning("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
+    #            except:
+    #               pass
+    #         """
 
-        for vm_property in vm_properties:  # loop through the list built from vcenter and build dictonaries.
-            property_dic = {}
-            for prop in vm_property.propSet:
-                property_dic[prop.name] = prop.val
 
-            vm = vm_property.obj
-            vm_mor = vm._moId
-            if "poweredOn" in vm.runtime.powerState:
-                try:
-                    # Get Values of IOPS which are 20 second averages more accurate you can get
-                    counter_name = 'datastore.numberReadAveraged.average'
-                    perfManager = content.perfManager
-                    counterId = perf_dict[counter_name]
-                    metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                    query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId=[metricId], startTime = start_time, endTime = end_time)
-                    statDatastoreIoRead = perfManager.QueryPerf(querySpec=[query])
-                    DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
-                    iopsr = DatastoreIoRead
-                    counter_name = 'datastore.numberWriteAveraged.average'
-                    perfManager = content.perfManager
-                    counterId = perf_dict[counter_name]
-                    metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                    query = vim.PerformanceManager.QuerySpec(intervalId = 20, entity = vm, metricId = [metricId], startTime = start_time, endTime = end_time)
-                    statDatastoreIoWrite = perfManager.QueryPerf(querySpec=[query])
-                    DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value))/Decimal(3.0))    # dividing by 3 to get the closest to real time value as possible
-                    iopsw = DatastoreIoWrite
 
-                    '''
-                    Check the vm_mor from Vcenter which is set in the getProperties function to see if
-                    exist in the VMS dictonary that was built from the oracle database.
-                    '''
+def vs_install_using_vmwtools(host, user, pwd, port, vm_moid, username, password, accountname, uicagent_url, userdata, ops):
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.verify_mode = ssl.CERT_NONE
+    si = connect.SmartConnect(host=host, user=user, pwd=pwd, port=port, sslContext=context)
+    content = si.RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_moid)
 
-                    # if vm_mor in vms:
-                    #     vm_id = vms[vm_mor]
-                    #     for datastore_vm in property_dic['datastore']:
-                    #         datastore_mor = str(datastore_vm).split(':')[1][:-1]
-                    #         if datastore_mor in datastores_db:
-                    #             datastore_id = datastores_db[datastore_mor]
-                    #             pg_cursor.execute("""insert into storage_perf_samples
-                    #                                         (datetime,
-                    #                                         vcenter_id,
-                    #                                         vm_id,
-                    #                                         datastore_id,
-                    #                                         read,
-                    #                                         write)
-                    #                                  values (%s,
-                    #                                         %s,
-                    #                                         %s,
-                    #                                         %s,
-                    #                                         %s,
-                    #                                         %s) """,
-                    #                                         (rundate, vcenter_id, vm_id, datastore_id, iopsr, iopsw))
-                    #         else:
-                    #             print("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
-                    # else:
-                    #     print("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
+    cert_ca = pypacksrc.workdir + '/' + pypacksrc.securitydir + '/' + 'ca.crt'
+    cert_cosacs_crt = pypacksrc.workdir + '/' + pypacksrc.securitydir + '/cosacs/' + accountname + '.crt'
+    cert_cosacs_key = pypacksrc.workdir + '/' + pypacksrc.securitydir + '/cosacs/' + accountname + '.key'
 
-                except:
-                      pass
+    UiCFailure="500"
 
-    except vmodl.MethodFault as e:
-        result = "Caught vmodl fault : {}".format(e.msg)
+    if "windows" in ops:
+        f = open(cert_ca)
+        data_ca_crt = f.read()
+        f.close()
+        f = open(cert_cosacs_crt)
+        data_pub_key = f.read()
+        f.close()
+        f = open(cert_cosacs_key)
+        data_priv_key = f.read()
+        f.close()
+
+        user_data_script = """Set-ExecutionPolicy Unrestricted\n$ca_key='{0}'\n$pub_key='{1}'\n$priv_key='{2}'\nout-file -filepath C:\ca.crt -inputobject $ca_key -encoding ASCII\nout-file -filepath C:\cosacs.crt -inputobject $pub_key -encoding ASCII\nout-file -filepath C:\cosacs.key -inputobject $priv_key -encoding ASCII\nicm $executioncontext.InvokeCommand.NewScriptBlock((New-Object Net.WebClient).DownloadString('{3}'))\n""".format(
+            data_ca_crt, data_pub_key, data_priv_key, uicagent_url)
+        nid = str(uuid.uuid1())
+        tmpfile = "uic{0}".format(nid)
+        with open(tmpfile, "w") as pfile:
+            pfile.write(user_data_script)
+        pfile.close()
+
+        result = vs_push_file_to_guest(si, vm, username, password, tmpfile, "C:\\installuicagent.ps1")
+        if result['status'] != "200":
+            return result
+        os.remove(tmpfile)
+
+        cmdrun = "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
+        cmdargs = '-command "C:\\installuicagent.ps1"'
+
+        result = vs_run_command_in_guest(si, vm, username, password, cmdrun, cmdargs)
+        if result['status'] != "200":
+            result['status'] = "400"
+            result['msg'] = " {0} Error while starting uicagent".format(UiCFailure)
+            return result
+    else:
+        cmdwgetargs = "-O /root/instcosacs --timeout 10 --tries=30 {0}".format(uicagent_url)
+        if ops in ["ubuntu", "debian"]:
+            cmdwget = "/usr/bin/wget"
+            cmdwgetargs = "-O /root/instcosacs --timeout 10 --tries=30 {0}".format(uicagent_url)
+        elif ops in ["centos", "fedora", "redhat"]:
+            cmdwget = "/usr/bin/curl"
+            cmdwgetargs = "--connect-timeout 20 -o /root/instcosacs {0}".format(uicagent_url)
+        else:
+            result = {"status": "400",
+                      "message": "{0} uicagent is not supported for the provided operating system".format(UiCFailure)}
+            return result
+
+        result = vs_run_command_in_guest(si, vm, username, password, cmdwget, cmdwgetargs)
+        if result['status'] != "200":
+            result['status'] = "400"
+            result['msg'] = " {0} Error while uploading uicagent".format(UiCFailure)
+
+        cmdprep = "/bin/mkdir"
+        cmdrun = "/bin/sh"
+        cmdrunargs = "/root/instcosacs"
+        cmdstart = "/etc/init.d/uicbagent"
+        cmdstartargs = "start"
+
+        result = vs_run_command_in_guest(si, vm, username, password, cmdprep, "-p /root/.ssh/uicb")
+        if result['status'] != "200":
+            result['status'] = "400"
+            result['msg'] = " {0} Error while starting uicagent".format(UiCFailure)
+            return result
+
+        result = vs_push_file_to_guest(si, vm, username, password, cert_ca, "/root/.ssh/uicb/ca.crt")
+        if result['status'] != "200":
+            return result
+
+        result = vs_push_file_to_guest(si, vm, username, password, cert_cosacs_crt, "/root/.ssh/uicb/cosacs.crt")
+        if result['status'] != "200":
+            return result
+
+        result = vs_push_file_to_guest(si, vm, username, password, cert_cosacs_key, "/root/.ssh/uicb/cosacs.key")
+        if result['status'] != "200":
+            return result
+
+        result = vs_run_command_in_guest(si, vm, username, password, cmdrun, cmdrunargs)
+        if result["status"] != "200":
+            result['status'] = "400"
+            result['msg'] = " {0} Error while installing uicagent".format(UiCFailure)
+            return result
+
+        time.sleep(10)
+        result = vs_run_command_in_guest(si, vm, username, password, cmdstart, cmdstartargs)
+        if result['status'] != "200":
+            result['status'] = "400"
+            result['msg'] = " {0} Error while starting uicagent".format(UiCFailure)
+    return result
+
+
+
+def vs_run_command_in_guest(si, vm, username, password, program_path, program_args, program_cwd=None, program_env=None):
+    UiCFailure = "500"
+    result = {"status": "200"}
+    tools_status = vm.guest.toolsStatus
+    if (tools_status == 'toolsNotInstalled' or tools_status == 'toolsNotRunning'):
+        result['status'] = "400"
+        result['msg'] = "{0} VMwareTools is not installed or is not running in the guest".format(UiCFailure)
         return result
 
+    # https://github.com/vmware/pyvmomi/blob/master/docs/vim/vm/guest/NamePasswordAuthentication.rst
+    content = si.RetrieveContent()
+    creds = vim.vm.guest.NamePasswordAuthentication(username=username, password=password)
 
+    # https://github.com/vmware/pyvmomi/blob/master/docs/vim/vm/guest/ProcessManager.rst
+    pm = content.guestOperationsManager.processManager
+    # https://www.vmware.com/support/developer/converter-sdk/conv51_apireference/vim.vm.guest.ProcessManager.ProgramSpec.html
+    ps = vim.vm.guest.ProcessManager.ProgramSpec(
+        # programPath=program,
+        # arguments=args
+        programPath=program_path,
+        arguments=program_args,
+        #workingDirectory=program_cwd,
+    )
 
-    """
-    atexit.register(Disconnect, vcenter_connection)
-         content = vcenter_connection.RetrieveContent()
-         perf_dict = {}
-         perfList = content.perfManager.perfCounter
+    res = pm.StartProgramInGuest(vm, creds, ps)
+    result['pid'] = res
 
-         for counter in perfList: #build the vcenter counters for the objects
-            counter_full = "{}.{}.{}".format(counter.groupInfo.key,counter.nameInfo.key,counter.rollupType)
-            perf_dict[counter_full] = counter.key
+    if res < 0:
+        result['status'] = "400"
+        result['msg'] = "{0} program exited non-zero".format(UiCFailure)
+    else:
+        result['msg'] = "Program executed"
 
-         viewType = [vim.VirtualMachine]
-         props = ['name','runtime.powerState', 'datastore']
-         specType = vim.VirtualMachine
-         objView = content.viewManager.CreateContainerView(content.rootFolder,viewType,True)
-         tSpec = vim.PropertyCollector.TraversalSpec(name='tSpecName', path='view', skip=False, type=vim.view.ContainerView)
-         pSpec = vim.PropertyCollector.PropertySpec(all=False, pathSet=props,type=specType)
-         oSpec = vim.PropertyCollector.ObjectSpec(obj=objView,selectSet=[tSpec],skip=False)
-         pfSpec = vim.PropertyCollector.FilterSpec(objectSet=[oSpec], propSet=[pSpec], reportMissingObjectsInResults=False)
-         vm_properties = content.propertyCollector.RetrieveProperties(specSet=[pfSpec])
-         objView.Destroy()
+    pdata = pm.ListProcessesInGuest(vm, creds, [res])
 
-         for vm_property in vm_properties: #loop through the list built from vcenter and build dictonaries.
-            property_dic = {}
-            for prop in vm_property.propSet:
-               property_dic[prop.name] = prop.val
+    # wait for pid to finish
+    while not pdata[0].endTime:
+        time.sleep(1)
+        pdata = pm.ListProcessesInGuest(vm, creds, [res])
 
-            vm = vm_property.obj
-            vm_mor = vm._moId
-            if "poweredOn" in vm.runtime.powerState:
-               try:
-                  #Get Values of IOPS which are 20 second averages more accurate you can get
-                  counter_name = 'datastore.numberReadAveraged.average'
-                  perfManager = content.perfManager
-                  counterId = perf_dict[counter_name]
-                  metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                  query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime=start_time, endTime=end_time)
-                  statDatastoreIoRead = perfManager.QueryPerf(querySpec=[query])
-                  DatastoreIoRead = (Decimal(sum(statDatastoreIoRead[0].value[0].value)) / Decimal(3.0)) #dividing by 3 to get the closest to real time value as possible
-                  iopsr = DatastoreIoRead
+    result['owner'] = pdata[0].owner
+    result['startTime'] = pdata[0].startTime.isoformat()
+    result['endTime'] = pdata[0].endTime.isoformat()
+    result['exitCode'] = pdata[0].exitCode
+    if result['exitCode'] != 0:
+        result['status'] = "400"
+        result['msg'] = "{0} program exited non-zero".format(UiCFailure)
+    else:
+        result['msg'] = "program completed successfully"
 
-                  counter_name = 'datastore.numberWriteAveraged.average'
-                  perfManager = content.perfManager
-                  counterId = perf_dict[counter_name]
-                  metricId = vim.PerformanceManager.MetricId(counterId=counterId, instance="*")
-                  query = vim.PerformanceManager.QuerySpec(intervalId=20, entity=vm, metricId=[metricId], startTime=start_time, endTime=end_time)
-                  statDatastoreIoWrite = perfManager.QueryPerf(querySpec=[query])
-                  DatastoreIoWrite = (Decimal(sum(statDatastoreIoWrite[0].value[0].value)) / Decimal(3.0)) #dividing by 3 to get the closest to real time value as possible
-                  iopsw = DatastoreIoWrite
+    return result
 
-                  '''
-                  Check the vm_mor from Vcenter which is set in the getProperties function to see if
-                  exist in the VMS dictonary that was built from the oracle database.
-                  '''
-                  if vm_mor in vms:
-                     vm_id = vms[vm_mor]
-                     for datastore_vm in property_dic['datastore']:
-                        datastore_mor = str(datastore_vm).split(':')[1][:-1]
-                        if datastore_mor in datastores_db:
-                           datastore_id = datastores_db[datastore_mor]
-                           pg_cursor.execute(\"""insert into storage_perf_samples
-                                                             (datetime,
-                                                             vcenter_id,
-                                                             vm_id,
-                                                             datastore_id,
-                                                             read,
-                                                             write)
-                                                      values (%s,
-                                                             %s,
-                                                             %s,
-                                                             %s,
-                                                             %s,
-                                                             %s) \""",
-                                                             (rundate,
-                                                             vcenter_id,
-                                                             vm_id,
-                                                             datastore_id,
-                                                             iopsr,
-                                                             iopsw))
+def vs_push_file_to_guest(si, vm, username, password, src, dest, overwrite=True):
+    UiCFailure="500"
+    import requests
+    requests.packages.urllib3.disable_warnings()
+    result = {"status": "200"}
+    tools_status = vm.guest.toolsStatus
+    if tools_status == 'toolsNotInstalled' or tools_status == 'toolsNotRunning':
+        result['status'] = "400"
+        result['msg'] = "{0} VMwareTools is not installed or is not running in the guest".format(UiCFailure)
+        return result
 
-                        else:
-                           logging.warning("VM %d has a datastore that is not in the Datastores table %s vm_mor doest show" % vm_id, vm_mor)
-                  else:
-                     logging.warning("The vm_mor %s was not found in the VMS database from Oracle, skipping...." %  vm_mor)
-               except:
-                  pass
-            """
+    # https://github.com/vmware/pyvmomi/blob/master/docs/vim/vm/guest/NamePasswordAuthentication.rst
+    creds = vim.vm.guest.NamePasswordAuthentication(
+        username=username, password=password
+    )
 
+    # the api requires a filesize in bytes
+    fdata = None
+    try:
+        # filesize = os.path.getsize(src)
+        filesize = os.stat(src).st_size
+        with open(src, 'rb') as f:
+            fdata = f.read()
+        result['local_filesize'] = filesize
+    except Exception as e:
+        result['status'] = "400"
+        result['msg'] = "{0} Unable to read src file {1}".format(UiCFailure, str(e))
+        return result
 
+    # https://www.vmware.com/support/developer/converter-sdk/conv60_apireference/vim.vm.guest.FileManager.html#initiateFileTransferToGuest
+    file_attribute = vim.vm.guest.FileManager.FileAttributes()
+    content = si.RetrieveContent()
+    url = content.guestOperationsManager.fileManager.InitiateFileTransferToGuest(vm, creds, dest, file_attribute, filesize, overwrite)
 
+    # PUT the filedata to the url ...
+    resp = requests.put(url, data=fdata, verify=False)
+    if resp.status_code != 200:
+        result['status'] = "400"
+        result['msg'] = " {0} Error while uploading file".format(UiCFailure)
+    else:
+        result['msg'] = "{0} Successfully uploaded file".format(UiCFailure)
 
-
-
+    return result

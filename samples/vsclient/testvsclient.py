@@ -1,15 +1,25 @@
 #!/usr/bin/env python
-
-
+# -*- coding: utf-8 -*-
 
 
 from samples.vsclient.vsclient import *
 import time,json
+from pyVmomi import vim
 
-host = "xxxxxx"
-user = "xxxxx"
-pwd = "xxxxx"
-port = 443
+import ConfigParser
+
+configParser = ConfigParser.RawConfigParser()
+configFile = r'.config.cfg'
+configParser.read(configFile)
+
+host = configParser.get('ACCESS','host')
+user = configParser.get('ACCESS','user')
+pwd = configParser.get('ACCESS','pwd')
+port = configParser.get('ACCESS','port')
+
+print port
+
+
 
 ######################################################
 ######### Unit tests #################################
@@ -188,7 +198,7 @@ port = 443
 # print result
 
 
-vm_mor = "vm-5973" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
+# vm_mor = "vm-5973" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-5796
 
 # result = delete_all_nic_in_vm(host, user, pwd, port, vm_mor)
 # print result
@@ -202,7 +212,7 @@ vm_mor = "vm-5973" #win 2012 "vm-5850"  # ubuntu 12.04 "vm-5781"   win 2016  vm-
 
 # vm_mor = "vm-5857"
 # portgroup_or_vs_mor1 = "network-540"       #vlan1 dhcp
-portgroup_or_vs_mor2 = "dvportgroup-5746"  #
+# portgroup_or_vs_mor2 = "dvportgroup-5746"  #
 
 
 
@@ -253,7 +263,7 @@ portgroup_or_vs_mor2 = "dvportgroup-5746"  #
 # print virtualmachine_infos
 
 
-# vm_mor = "vm-5641"
+# vm_mor = "vm-34"
 # link = generate_html5_console(host, user, pwd, port, vm_mor)
 # print link
 
@@ -293,8 +303,34 @@ portgroup_or_vs_mor2 = "dvportgroup-5746"  #
 
 
 
-
 # Monitoring Graph
 
 # result = function(host, user, pwd, port)
 # print result
+
+
+# test windows customization
+
+# vm_moid="vm-6154"
+# username="administrateur"
+# password="Pr0l0gue:2014"
+# accountname="prologue"
+# uicagent_url="https://s3-eu-west-1.amazonaws.com/uicbdeposit/agent/Windows/v2.2/uicbagent.ps1"
+# userdata=""
+# ops="windows"
+# result = vs_install_using_vmwtools(host, user, pwd, port, vm_moid, username, password, accountname, uicagent_url, userdata, ops)
+
+
+# vm_mor="vm-6171"
+# a = vim.vm.customization.WinOptions.SysprepRebootOption.reboot
+# print type(a)
+
+
+
+
+# while True:
+#     virtualmachine_infos = get_virtualmachine_info(host, user, pwd, port, vm_mor)
+#     time.sleep(2)
+#     import json
+#     a=json.loads(virtualmachine_infos)
+#     print a['tools']
